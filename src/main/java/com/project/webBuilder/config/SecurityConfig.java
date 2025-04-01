@@ -2,17 +2,14 @@ package com.project.webBuilder.config;
 
 
 import com.project.webBuilder.auth.CustomOauth2UserService;
-import com.project.webBuilder.user.enums.Role;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfiguration;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @RequiredArgsConstructor
 @Configuration
@@ -26,24 +23,24 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/").permitAll() // 모든 사용자가 접근 가능
+                        .requestMatchers("/", "/sharedTemplateStore/getAll").permitAll() // 모든 사용자가 접근 가능
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증된 사용자만 접근 가능
                 )// 요청 URL에 따른 권한을 설정
 
                 .logout(logout -> logout.logoutSuccessUrl("/")) //로그아웃 시 리다이렉트될 url
                 .oauth2Login(oauth2Login -> oauth2Login
-                        .defaultSuccessUrl("/")// OAuth 2 로그인 설정 진입점
+                        .defaultSuccessUrl("/sharedTemplates/getAll")// OAuth 2 로그인 설정 진입점
                         .userInfoEndpoint(userInfoEndpoint -> userInfoEndpoint
                                 .userService(customOauth2UserService) // OAuth 2 로그인 성공 이후 사용자 정보를 가져올 때의 설정
                         )
                 )
 
-                /*
+/*
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling
                                 .authenticationEntryPoint((request, response, authException) -> {
                                     // 인증되지 않은 사용자가 접근했을 때 리다이렉트할 URL 설정
-                                    response.sendRedirect("http://localhost:3000");  // 인증되지 않은 사용자는 /login으로 리다이렉트
+                                    response.sendRedirect("http://localhost:3000/login");  // 인증되지 않은 사용자는 /login으로 리다이렉트
                                 })
 
 
