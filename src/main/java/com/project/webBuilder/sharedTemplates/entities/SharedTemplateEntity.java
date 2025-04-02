@@ -21,9 +21,6 @@ public class SharedTemplateEntity extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; //기본키
 
-    @Column(unique = true)
-    private Long dashboardKey; // Dashboard테이블의 참조키
-
     @Column(nullable = false)
     private String templateName; //템플릿 제목
 
@@ -39,18 +36,13 @@ public class SharedTemplateEntity extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String imagePath; // 미리보기를 위한 해당 템플릿의 이미지가 저장된 상대 경로 저장
 
-    @Column(nullable = false)
-    private String description; // 템플릿에 대한 설명
-
     @Builder
-    public SharedTemplateEntity(DashboardEntity dashboardEntity, String templateName, UserDTO userDTO,
-                                String category, String templatePath, String imagePath, String description){
-        this.dashboardKey =  dashboardEntity.getId();
+    public SharedTemplateEntity(String templateName, UserDTO userDTO,
+                                String category, String templatePath, String imagePath){
         this.templateName = templateName;
         this.email = userDTO.getEmail();
         this.category = category;
         this.templatePath = templatePath;
         this.imagePath = imagePath;
-        this.description = description;
     }
 }

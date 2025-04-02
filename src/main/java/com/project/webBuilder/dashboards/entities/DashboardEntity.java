@@ -30,9 +30,6 @@ public class DashboardEntity {
     private String imagePath;
 
     @Column
-    private Boolean shared;
-
-    @Column
     private String email;
 
     @Column
@@ -44,12 +41,11 @@ public class DashboardEntity {
 
     @Builder
     public DashboardEntity(String projectName, String projectPath, Boolean modified, String imagePath,
-                           Boolean shared, String email, String deployDomain, Boolean publish) {
+                           String email, String deployDomain, Boolean publish) {
         this.projectName = projectName;
         this.projectPath = projectPath;
         this.modified = modified;
         this.imagePath = imagePath;
-        this.shared = shared;
         this.email = email;
         this.deployDomain = deployDomain;
         this.publish = publish;

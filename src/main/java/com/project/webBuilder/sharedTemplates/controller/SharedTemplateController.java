@@ -23,7 +23,7 @@ public class SharedTemplateController {
     private final SharedTemplateService sharedTemplateService;
 
     // 모든 공유된 템플릿 호출
-    @GetMapping("/getAll")
+    @GetMapping("/get-all")
     public ResponseEntity<List<SharedTemplateDTO>> getAllSharedTemplates(){
 
         List<SharedTemplateDTO> sharedTemplateDTO = sharedTemplateService.getAllSharedTemplateDTO();
@@ -41,11 +41,39 @@ public class SharedTemplateController {
         String projectName = (String)body.get("projectName");
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
         String email =userDTO.getEmail();
-        System.out.println("projectName:"+projectName);
         DashboardDTO dashboardDTO = sharedTemplateService.useSharedTemplate(id,projectName,email);
 
         return new ResponseEntity<>(dashboardDTO, HttpStatus.OK);
     }
+
+
+    //로그인한 사용자가 공유한 템플릿 호출
+    @GetMapping("get-mine")
+    public ResponseEntity<List<SharedTemplateDTO>> getMySharedTemplates(HttpSession session){
+        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
+        String email = userDTO.getEmail();
+        List<SharedTemplateDTO> sharedTemplateDTO = sharedTemplateService.getMySharedTemplates(email);
+
+        if(sharedTemplateDTO.isEmpty()){
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(sharedTemplateDTO,HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{id}/remove")
+    public ResponseEntity<?> removeSharedTemplate(@PathVariable Long id){
+        try{
+            boolean remove = sharedTemplateService.removeSharedTemplate(id);
+            if(remove){
+                return ResponseEntity.ok("SharedTemplate remove successfully");
+            }else{
+                return ResponseEntity.status(404).body("SharedTemplate not found");
+            }
+        } catch (Exception e){
+            return ResponseEntity.status(500).body("An error occurred: " + e.getMessage());
+        }
+    }
+
 
     @GetMapping("/{templateDir}")
     public ResponseEntity<Void> forwardSharedTemplate(@PathVariable String templateDir) {

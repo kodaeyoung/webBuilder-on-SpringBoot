@@ -1,5 +1,6 @@
 package com.project.webBuilder.sharedTemplates.service;
 
+import com.project.webBuilder.common.dir.Directory;
 import com.project.webBuilder.dashboards.dto.DashboardDTO;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
@@ -21,6 +22,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,23 +31,16 @@ public class SharedTemplateService {
     private final UserRepository userRepository;
     private final DashboardRepository dashboardRepository;
 
-    public List<SharedTemplateDTO> getAllSharedTemplateDTO(){
-        List<SharedTemplateEntity> sharedTemplateEntities = sharedTemplateRepository.findAll();
-        List<SharedTemplateDTO> sharedTemplateDTOS = new ArrayList<>();
-        for(SharedTemplateEntity sharedTemplateEntity : sharedTemplateEntities){
-            Optional<UserEntity> optionalUser = userRepository.findByEmail(sharedTemplateEntity.getEmail());
-            if(optionalUser.isPresent()){
-                UserEntity userEntity =optionalUser.get();
+    public List<SharedTemplateDTO> getAllSharedTemplateDTO() {
+        return sharedTemplateRepository.findAll().stream()
+                .map(sharedTemplateEntity -> {
+                    UserDTO userDTO = userRepository.findByEmail(sharedTemplateEntity.getEmail())
+                            .map(UserDTO::fromEntity) // UserEntity -> UserDTO 변환
+                            .orElse(new UserDTO("Anonymous", "Anonymous", "")); // 기본값 설정
 
-                // SharedTemplateDTO와 UserDTO를 변환하여 리스트에 추가
-                SharedTemplateDTO sharedTemplateDTO = SharedTemplateDTO.fromEntity(sharedTemplateEntity, UserDTO.fromEntity(userEntity));
-                sharedTemplateDTOS.add(sharedTemplateDTO);
-            }else{
-                SharedTemplateDTO sharedTemplateDTO = SharedTemplateDTO.fromEntity(sharedTemplateEntity,new UserDTO("Anonymous","Anonymous",""));
-                sharedTemplateDTOS.add(sharedTemplateDTO);
-            }
-        }
-        return sharedTemplateDTOS;
+                    return SharedTemplateDTO.fromEntity(sharedTemplateEntity, userDTO);
+                })
+                .collect(Collectors.toList()); // List<SharedTemplateDTO> 반환
     }
 
 
@@ -58,81 +53,85 @@ public class SharedTemplateService {
 
             Path rootDirPath = Paths.get(System.getProperty("user.dir")); // 애플리케이션의 루트 디렉터리
 
-            System.out.println(rootDirPath.toString());
-            // 선택된 템플릿의 상대 경로
-            Path selectTemplatePath = Paths.get(sharedTemplateEntity.getTemplatePath());
-            System.out.println(selectTemplatePath.toString());
-            // 선택된 템플릿 절대 경로
-            Path selectTemplatePathAbsolute =rootDirPath.resolve(selectTemplatePath);
+            // 선택된 템플릿의 절대 경로
+            Path selectTemplateAbsolutePath =rootDirPath.resolve(sharedTemplateEntity.getTemplatePath());
 
-            // 새로운 디렉토리 이름 생성
+            // 새로운 디렉토리 생성
             String newDirName = projectName + "_" + email + "_" + System.currentTimeMillis();
+            Path newProjectPath = rootDirPath.resolve("store/dashboard").resolve(newDirName); //절대 경로
 
-            //절대 경로
-            Path newProjectPath = rootDirPath.resolve("store/dashboard").resolve(newDirName);
-            System.out.println(newProjectPath.toString());
             // 디렉토리가 존재하지 않으면 생성
             if (Files.notExists(newProjectPath)) {
                 Files.createDirectories(newProjectPath);
             }
 
             // 템플릿 파일 복사
-            copyDirectory(selectTemplatePathAbsolute, newProjectPath);
+            Directory.copyDirectory(selectTemplateAbsolutePath, newProjectPath);
 
-            // 이미지 경로 설정
-            Path selectTemplateImagePath = Paths.get(sharedTemplateEntity.getImagePath()); //상대 경로
 
-            Path selectTemplateImagePathAbsolute = rootDirPath.resolve(selectTemplateImagePath); //절대 경로
-
+            // 선택된 템플릿 이미지의 절대경로
+            Path selectTemplateImageAbsolutePath = rootDirPath.resolve(sharedTemplateEntity.getImagePath()); //절대 경로
+            // 새로운 이미지를 저장할 경로
             Path newImagePath = rootDirPath.resolve("store/dashboardImage").resolve(newDirName+ ".png"); //절대경로
 
             // 이미지 파일 복사
-            Files.copy(selectTemplateImagePathAbsolute, newImagePath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(selectTemplateImageAbsolutePath, newImagePath, StandardCopyOption.REPLACE_EXISTING);
 
             // 상대 경로로 변환
 
-            Path relativeNewProjectPath = rootDirPath.relativize(newProjectPath);
-            Path relativeNewImagePath = rootDirPath.relativize(newImagePath);
+            Path newProjectRelativePath = rootDirPath.relativize(newProjectPath);
+            Path newImageRelativePath = rootDirPath.relativize(newImagePath);
 
-            System.out.println("pro:"+projectName);
 
             // dashboard 테이블에 새 데이터 저장
             DashboardEntity newDashboard = DashboardEntity.builder()
                                             .projectName((projectName!=null)?projectName:"default")
-                                            .projectPath(relativeNewProjectPath.toString())
-                                            .imagePath(relativeNewImagePath.toString())
+                                            .projectPath(newProjectRelativePath.toString())
+                                            .imagePath(newImageRelativePath.toString())
                                             .modified(false)
-                                            .shared(false)
                                             .email(email)
                                             .publish(false)
                                             .build();
             DashboardEntity savedDashboard=dashboardRepository.save(newDashboard);
 
-            System.out.println("Saved Project Name: " + savedDashboard.getProjectName());
             return DashboardDTO.fromEntity(newDashboard);
         } else {
             throw new IllegalArgumentException("Template not found");
         }
     }
 
-    private void copyDirectory(Path source, Path target) throws IOException {
-        // 파일 복사를 위해 Files.walkFileTree 사용
-        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Path destination = target.resolve(source.relativize(file));
-                Files.copy(file, destination, StandardCopyOption.REPLACE_EXISTING);
-                return FileVisitResult.CONTINUE;
-            }
+    //로그인한 사용자가 공유한 템플릿 호출
+    public List<SharedTemplateDTO> getMySharedTemplates(String email) {
+        return sharedTemplateRepository.findAllByEmail(email)
+                .stream()
+                .map(sharedTemplateEntity -> {
+                    UserDTO userDTO = userRepository.findByEmail(sharedTemplateEntity.getEmail())
+                            .map(UserDTO::fromEntity)
+                            .orElse(new UserDTO("Anonymous", "Anonymous", ""));
+                    return SharedTemplateDTO.fromEntity(sharedTemplateEntity,userDTO);
+                })
+                .collect(Collectors.toList());
+    }
 
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                Path destination = target.resolve(source.relativize(dir));
-                if (Files.notExists(destination)) {
-                    Files.createDirectories(destination);
-                }
-                return FileVisitResult.CONTINUE;
+    // 공유된 템플릿 삭제
+    public boolean removeSharedTemplate(Long id) {
+        Optional<SharedTemplateEntity> optionalSharedTemplateEntity = sharedTemplateRepository.findById(id);
+        if (optionalSharedTemplateEntity.isPresent()) {
+            SharedTemplateEntity sharedTemplateEntity = optionalSharedTemplateEntity.get();
+
+            Path rootDirPath = Paths.get(System.getProperty("user.dir"));
+            Path sharedTemplateAbsolutePath = rootDirPath.resolve(sharedTemplateEntity.getTemplatePath());
+            Path imageAbsolutePath = rootDirPath.resolve(sharedTemplateEntity.getImagePath());
+            try {
+                Directory.deleteDirectory(sharedTemplateAbsolutePath);
+                Directory.deleteDirectory(imageAbsolutePath);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
             }
-        });
+            sharedTemplateRepository.delete(sharedTemplateEntity);
+            return true;
+        }
+        return false;
     }
 }
