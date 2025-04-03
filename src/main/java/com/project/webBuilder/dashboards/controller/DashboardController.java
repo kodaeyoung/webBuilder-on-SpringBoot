@@ -5,6 +5,7 @@ import com.project.webBuilder.dashboards.service.DashboardService;
 import com.project.webBuilder.user.dto.UserDTO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -20,7 +21,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     //사용자 대시보드 호출
-    @GetMapping("/mydashboard")
+    @GetMapping("/my-dashboard")
     public ResponseEntity<List<DashboardDTO>> myDashboard(HttpSession session){
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
         String email = userDTO.getEmail();
@@ -51,12 +52,11 @@ public class DashboardController {
 
     //프로젝트 공유
     @PostMapping("/share")
-    public ResponseEntity<?> projectShare(@RequestBody Map<String,Object> request , HttpSession session){
+    public ResponseEntity<?> projectShare(@RequestBody Map<String,Object> body , HttpSession session){
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
-        Long id = (Long) request.get("id");
-        String templateName = (String) request.get("templateName");
-        String category = (String) request.get("category");
-        String description = (String) request.get("description");
+        Long id = Long.parseLong((String)body.get("id"));
+        String templateName = (String) body.get("templateName");
+        String category = (String) body.get("category");
 
         try{
             boolean shared = dashboardService.projectShare(id,templateName,category,userDTO);
@@ -84,6 +84,15 @@ public class DashboardController {
         } catch (Exception e){
             return ResponseEntity.status(500).body("An error occurred: " + e.getMessage());
         }
+    }
+
+
+    @GetMapping("/{dashboardDir}")
+    public ResponseEntity<Void> forwardSharedTemplate(@PathVariable String dashboardDir) {
+        // sharedTemplate/{dashboarDir}/index.html로 포워드
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, "/sharedTemplate/" + dashboardDir + "/index.html")
+                .build();
     }
 }
 

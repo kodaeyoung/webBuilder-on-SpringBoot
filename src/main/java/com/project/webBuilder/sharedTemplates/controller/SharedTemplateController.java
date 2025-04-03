@@ -60,6 +60,7 @@ public class SharedTemplateController {
         return new ResponseEntity<>(sharedTemplateDTO,HttpStatus.OK);
     }
 
+    //공유된 템플릿 삭제
     @DeleteMapping("/{id}/remove")
     public ResponseEntity<?> removeSharedTemplate(@PathVariable Long id){
         try{
