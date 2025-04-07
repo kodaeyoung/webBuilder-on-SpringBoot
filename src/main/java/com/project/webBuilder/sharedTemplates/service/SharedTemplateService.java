@@ -86,8 +86,8 @@ public class SharedTemplateService {
             // dashboard 테이블에 새 데이터 저장
             DashboardEntity newDashboard = DashboardEntity.builder()
                                             .projectName((projectName!=null)?projectName:"default")
-                                            .projectPath(newProjectRelativePath.toString())
-                                            .imagePath(newImageRelativePath.toString())
+                                            .projectPath(newProjectRelativePath.toString().replace("\\", "/"))
+                                            .imagePath(newImageRelativePath.toString().replace("\\", "/"))
                                             .modified(false)
                                             .email(email)
                                             .publish(false)

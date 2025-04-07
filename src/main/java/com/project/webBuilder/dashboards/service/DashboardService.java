@@ -88,8 +88,8 @@ public class DashboardService {
             // dashboard 테이블에 새 데이터 저장
             SharedTemplateEntity newSharedTemplate = SharedTemplateEntity.builder()
                     .templateName((templateName != null) ? templateName : "default")
-                    .templatePath(newSharedTemplateRelativePath.toString())
-                    .imagePath(newSharedImageRelativePath.toString())
+                    .templatePath(newSharedTemplateRelativePath.toString().replace("\\", "/"))
+                    .imagePath(newSharedImageRelativePath.toString().replace("\\", "/"))
                     .category(category)
                     .userDTO(userDTO)
                     .build();

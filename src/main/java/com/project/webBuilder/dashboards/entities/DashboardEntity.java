@@ -1,6 +1,7 @@
 package com.project.webBuilder.dashboards.entities;
 
 
+import com.project.webBuilder.common.entities.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Table(name="dashboards")
-public class DashboardEntity {
+public class DashboardEntity extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,8 +52,23 @@ public class DashboardEntity {
         this.publish = publish;
     }
 
+    public DashboardEntity updateDeployDomain(String deployDomain){
+        this.deployDomain=deployDomain;
+        return this;
+    }
+
     public DashboardEntity updateProjectName(String projectName){
         this.projectName=projectName;
+        return this;
+    }
+
+    public DashboardEntity updateModified(Boolean bool){
+        modified = bool;
+        return this;
+    }
+
+    public DashboardEntity updatePublish(Boolean bool){
+        publish = bool;
         return this;
     }
 }

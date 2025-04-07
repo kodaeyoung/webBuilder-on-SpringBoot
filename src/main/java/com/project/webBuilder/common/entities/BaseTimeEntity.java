@@ -1,4 +1,4 @@
-package com.project.webBuilder.entities;
+package com.project.webBuilder.common.entities;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;

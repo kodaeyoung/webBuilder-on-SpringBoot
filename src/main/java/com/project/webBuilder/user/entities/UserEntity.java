@@ -1,6 +1,6 @@
 package com.project.webBuilder.user.entities;
 
-import com.project.webBuilder.entities.BaseTimeEntity;
+import com.project.webBuilder.common.entities.BaseTimeEntity;
 import com.project.webBuilder.user.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;

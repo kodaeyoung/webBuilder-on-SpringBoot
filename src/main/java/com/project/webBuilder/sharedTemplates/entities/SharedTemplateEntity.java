@@ -1,8 +1,7 @@
 package com.project.webBuilder.sharedTemplates.entities;
 
 
-import com.project.webBuilder.dashboards.entities.DashboardEntity;
-import com.project.webBuilder.entities.BaseTimeEntity;
+import com.project.webBuilder.common.entities.BaseTimeEntity;
 
 import com.project.webBuilder.user.dto.UserDTO;
 import jakarta.persistence.*;

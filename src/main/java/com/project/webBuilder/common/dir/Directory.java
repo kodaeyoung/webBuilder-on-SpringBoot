@@ -4,6 +4,10 @@ package com.project.webBuilder.common.dir;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Directory {
     public static void copyDirectory(Path source, Path target) throws IOException {
@@ -42,6 +46,43 @@ public class Directory {
                     return FileVisitResult.CONTINUE;
                 }
             });
+        }
+    }
+
+    public static boolean isSameDirectory(Path dir1, Path dir2) throws IOException {
+        try (Stream<Path> files1 = Files.walk(dir1);
+             Stream<Path> files2 = Files.walk(dir2)) {
+
+            List<String> list1 = files1
+                    .filter(Files::isRegularFile)
+                    .map(p -> dir1.relativize(p).toString())
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            List<String> list2 = files2
+                    .filter(Files::isRegularFile)
+                    .map(p -> dir2.relativize(p).toString())
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            if (!list1.equals(list2)) {
+                return false;
+            }
+
+            for (String relativePath : list1) {
+                Path file1 = dir1.resolve(relativePath);
+                Path file2 = dir2.resolve(relativePath);
+
+                if (!Files.exists(file1) || !Files.exists(file2)) return false;
+
+                byte[] bytes1 = Files.readAllBytes(file1);
+                byte[] bytes2 = Files.readAllBytes(file2);
+
+                if (!Arrays.equals(bytes1, bytes2)) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
