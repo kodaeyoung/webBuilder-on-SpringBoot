@@ -2,11 +2,10 @@ package com.project.webBuilder.deploy.controller;
 
 import com.project.webBuilder.deploy.service.DeployService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -63,6 +62,14 @@ public class DeployController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("An error occurred: "+e.getMessage());
         }
+    }
+
+    @GetMapping("/deploy/{deployDir}")
+    public ResponseEntity<Void> forwardDeploy(@PathVariable String deployDir) {
+        // sharedTemplate/{dashboarDir}/index.html로 포워드
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, "/deploy/" + deployDir + "/index.html")
+                .build();
     }
 
 }

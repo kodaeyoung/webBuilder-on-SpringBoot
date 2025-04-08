@@ -13,7 +13,7 @@ import java.lang.reflect.Type;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name="deploy")
+@Table(name="deploys")
 public class DeployEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
