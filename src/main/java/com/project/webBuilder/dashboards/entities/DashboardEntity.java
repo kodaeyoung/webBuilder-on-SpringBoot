@@ -63,12 +63,17 @@ public class DashboardEntity extends BaseTimeEntity {
     }
 
     public DashboardEntity updateModified(Boolean bool){
-        modified = bool;
+        this.modified = bool;
         return this;
     }
 
     public DashboardEntity updatePublish(Boolean bool){
-        publish = bool;
+        this.publish = bool;
+        return this;
+    }
+
+    public DashboardEntity updateImagePath(String imagePath){
+        this.imagePath=imagePath;
         return this;
     }
 }
