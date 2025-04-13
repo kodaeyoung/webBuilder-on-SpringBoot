@@ -1,6 +1,6 @@
 package com.project.webBuilder.dashboards.service;
 
-import com.project.webBuilder.common.dir.Directory;
+import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.dto.DashboardDTO;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
@@ -68,7 +68,7 @@ public class DashboardService {
             }
 
             // 템플릿 파일 복사
-            Directory.copyDirectory(selectProjectPathAbsolute, newSharedTemplateAbsolutePath);
+            DirectoryService.copyDirectory(selectProjectPathAbsolute, newSharedTemplateAbsolutePath);
 
 
             // 선택된 대시보드 이미지의 절대경로
@@ -115,8 +115,8 @@ public class DashboardService {
             Path imageAbsolutePath = rootDirPath.resolve(dashboardEntity.getImagePath());
 
             try {
-                Directory.deleteDirectory(projectAbsolutePath);
-                Directory.deleteDirectory(imageAbsolutePath);
+                DirectoryService.deleteDirectory(projectAbsolutePath);
+                DirectoryService.deleteDirectory(imageAbsolutePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;

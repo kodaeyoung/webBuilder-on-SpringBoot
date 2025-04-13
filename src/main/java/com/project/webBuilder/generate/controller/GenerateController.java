@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -17,10 +18,19 @@ public class GenerateController {
 
     private final GenerateService generateService;
     @PostMapping("generate")
-    public ResponseEntity<?> generatePage(@RequestBody Map<String,Object> body, HttpSession session){
+    public ResponseEntity<?> generatePage(@RequestBody Map<String,Object> body, HttpSession session) throws IOException {
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
         String email =userDTO.getEmail();
 
-        boolean generate = generateService.generate(body,email);
+        try{
+            boolean generate = generateService.generate(body,email);
+            if(generate){
+                return ResponseEntity.ok("generate project successfully");
+            }else{
+                return ResponseEntity.status(404).body("appropriate template not found");
+            }
+        } catch (Exception e){
+            return ResponseEntity.status(500).body("An error occurred: " + e.getMessage());
+        }
     }
 }

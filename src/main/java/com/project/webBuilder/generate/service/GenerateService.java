@@ -1,6 +1,8 @@
 package com.project.webBuilder.generate.service;
 
-import com.project.webBuilder.common.dir.Directory;
+import com.project.webBuilder.common.gpt.GptApi;
+import com.project.webBuilder.common.util.Extraction;
+import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
 import com.project.webBuilder.generate.dto.BasicTemplateDTO;
@@ -30,12 +32,11 @@ import java.util.regex.Pattern;
 @Service
 public class GenerateService {
 
-    @Value("${openai.api.key}")
-    private String openaiApiKey;
+
 
     private final BasicTemplateRepository basicTemplateRepository;
     private final DashboardRepository dashboardRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+
 
 
     public boolean generate(Map<String,Object> body, String email) throws IOException {
@@ -67,12 +68,6 @@ public class GenerateService {
 
     //적절한 basicTemplate선택
     private Long selectTemplate(String websiteType, String mood, List<BasicTemplateDTO> basicTemplateDTOS) {
-        List<Map<String, String>> messages = new ArrayList<>();
-
-        messages.add(Map.of(
-                "role", "system",
-                "content", "You are a helpful assistant."
-        ));
 
         StringBuilder userContent = new StringBuilder();
         userContent.append("The user provided the following requirements for a website:\n")
@@ -90,40 +85,9 @@ public class GenerateService {
         userContent.append("\nIf there is a suitable template, respond with \"template:number\".\n")
                 .append("If no appropriate template is found, choose the closest match and respond with \"template:number\".");
 
-        messages.add(Map.of(
-                "role", "user",
-                "content", userContent.toString()
-        ));
+        String content = GptApi.gpt("You are a helpful assistant.",userContent.toString(),150);
 
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "gpt-4o-mini");
-        requestBody.put("messages", messages);
-        requestBody.put("max_tokens", 150);
-        requestBody.put("n", 1);
-        requestBody.put("temperature", 0.7);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(openaiApiKey);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.exchange(
-                    "https://api.openai.com/v1/chat/completions",
-                    HttpMethod.POST,
-                    entity,
-                    Map.class
-            );
-
-            Map choice = ((List<Map>) response.getBody().get("choices")).get(0);
-            Map message = (Map) choice.get("message");
-            String content = (String) message.get("content");
-
-            return extractTemplateId(content.trim());
-        } catch (HttpStatusCodeException e) {
-            throw new RuntimeException("Failed to call GPT-4 API: " + e.getResponseBodyAsString());
-        }
+        return Extraction.extractTemplateId(content.trim());
     }
 
     //해당 basicTemplate 복사하여 프로젝트 생성
@@ -145,7 +109,7 @@ public class GenerateService {
         }
 
         // 템플릿 파일 복사
-        Directory.copyDirectory(selectBasicTemplateAsolutePath, newProjectPath);
+        DirectoryService.copyDirectory(selectBasicTemplateAsolutePath, newProjectPath);
 
         //상대 경로 변환
         Path newProjectRelativePath = rootDirPath.relativize(newProjectPath);
@@ -184,8 +148,10 @@ public class GenerateService {
         for (File htmlFile : htmlFiles) {
             try {
                 String html = Files.readString(htmlFile.toPath());
-                String gptResult = callGptToModifyHtml(html, features, content);
-                String modifiedHtml = extractValidHtml(gptResult);
+                String gptResult = GptApi.gpt("You are a helpful assistant.",
+                        String.format("Modify the HTML to match the following features and content:\nFeatures: %s\nContent: %s\n\n%s",
+                        features, content, html),4000);
+                String modifiedHtml = Extraction.extractValidHtml(gptResult);
 
                 if (modifiedHtml != null) {
                     Files.writeString(htmlFile.toPath(), modifiedHtml, StandardCharsets.UTF_8);
@@ -210,71 +176,7 @@ public class GenerateService {
     }
 
 
-
-
-
     /* <------------------------------- util 메서드 ------------------------------------->*/
 
 
-    //요구사항에 맞춰 html 수정하는 메서드
-    private String callGptToModifyHtml(String html, String features, String content) {
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "gpt-4o-mini");
-
-        List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", "You are a helpful assistant."));
-        messages.add(Map.of("role", "user", "content",
-                String.format("Modify the HTML to match the following features and content:\nFeatures: %s\nContent: %s\n\n%s",
-                        features, content, html)
-        ));
-        requestBody.put("messages", messages);
-        requestBody.put("max_tokens", 4000);
-        requestBody.put("temperature", 0.7);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(openaiApiKey);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        ResponseEntity<Map> response = restTemplate.exchange(
-                "https://api.openai.com/v1/chat/completions",
-                HttpMethod.POST,
-                entity,
-                Map.class
-        );
-
-        Map choice = ((List<Map>) response.getBody().get("choices")).get(0);
-        Map message = (Map) choice.get("message");
-        String contentResp = (String) message.get("content");
-
-        return contentResp.trim();
-    }
-
-    // html 추출 정규식
-    private String extractValidHtml(String gptResponse) {
-        Pattern pattern = Pattern.compile("<!DOCTYPE html>[\\s\\S]*?<html[^>]*>[\\s\\S]*?</html>", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(gptResponse);
-        if (matcher.find()) {
-            return matcher.group(0);
-        }
-        return null;
-    }
-
-    //정규식 template:1 의 형식의 String에서 Long타입의 1을 반환
-    public Long extractTemplateId(String analysis) {
-        if (analysis == null || analysis.isEmpty()) {
-            throw new IllegalArgumentException("Analysis is null or empty");
-        }
-
-        Pattern pattern = Pattern.compile("template:\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(analysis.trim());
-
-        if (matcher.find()) {
-            return Long.parseLong(matcher.group(1));
-        } else {
-            throw new IllegalArgumentException("No suitable template found in analysis string.");
-        }
-    }
 }

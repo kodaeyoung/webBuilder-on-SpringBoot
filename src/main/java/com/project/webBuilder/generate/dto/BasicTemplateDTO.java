@@ -7,14 +7,12 @@ import lombok.Getter;
 public class BasicTemplateDTO {
     private Long id;
     private String websiteType;
-    private String feature;
     private String mood;
 
     @Builder
-    public BasicTemplateDTO(Long id, String websiteType, String feature, String mood) {
+    public BasicTemplateDTO(Long id, String websiteType, String mood) {
         this.id = id;
         this.websiteType = websiteType;
-        this.feature = feature;
         this.mood = mood;
     }
 }

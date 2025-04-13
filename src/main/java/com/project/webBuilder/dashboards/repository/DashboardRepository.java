@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface DashboardRepository extends JpaRepository<DashboardEntity,Long> {
     List<DashboardEntity> findAllByEmail(String email);
 
-    DashboardEntity findByProjectPath(String projectRelativePath);
+    Optional<DashboardEntity> findByProjectPath(String projectRelativePath);
 }

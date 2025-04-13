@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface BasicTemplateRepository extends JpaRepository<BasicTemplateEntity,Long> {
-    @Query("SELECT new com.project.webBuilder.generate.dto.BasicTemplateDTO(t.id, t.websiteType, t.feature, t.mood) " +
+    @Query("SELECT new com.project.webBuilder.generate.dto.BasicTemplateDTO(t.id, t.websiteType, t.mood) " +
             "FROM BasicTemplateEntity t")
     List<BasicTemplateDTO> findAllBasicTemplates();
 }

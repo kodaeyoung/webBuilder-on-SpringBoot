@@ -1,6 +1,7 @@
 package com.project.webBuilder.sharedTemplates.service;
 
-import com.project.webBuilder.common.dir.Directory;
+
+import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.dto.DashboardDTO;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
@@ -66,7 +67,7 @@ public class SharedTemplateService {
             }
 
             // 템플릿 파일 복사
-            Directory.copyDirectory(selectTemplateAbsolutePath, newProjectPath);
+            DirectoryService.copyDirectory(selectTemplateAbsolutePath, newProjectPath);
 
 
             // 선택된 템플릿 이미지의 절대경로
@@ -123,8 +124,8 @@ public class SharedTemplateService {
             Path sharedTemplateAbsolutePath = rootDirPath.resolve(sharedTemplateEntity.getTemplatePath());
             Path imageAbsolutePath = rootDirPath.resolve(sharedTemplateEntity.getImagePath());
             try {
-                Directory.deleteDirectory(sharedTemplateAbsolutePath);
-                Directory.deleteDirectory(imageAbsolutePath);
+                DirectoryService.deleteDirectory(sharedTemplateAbsolutePath);
+                DirectoryService.deleteDirectory(imageAbsolutePath);
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;

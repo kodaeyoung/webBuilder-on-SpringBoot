@@ -1,15 +1,24 @@
-package com.project.webBuilder.common.dir;
+package com.project.webBuilder.dir.service;
 
+
+import com.project.webBuilder.dir.FileNode;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Directory {
+@Service
+public class DirectoryService {
+
+    private Path rootDirPath = Paths.get(System.getProperty("user.dir"));
+    // 디렉터리 복사
     public static void copyDirectory(Path source, Path target) throws IOException {
         // 파일 복사를 위해 Files.walkFileTree 사용
         Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
@@ -31,6 +40,8 @@ public class Directory {
         });
     }
 
+
+    //디렉터리 삭제
     public static void deleteDirectory(Path path) throws IOException {
         if (Files.exists(path)) {
             Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
@@ -49,6 +60,8 @@ public class Directory {
         }
     }
 
+
+    //디렉터리 비교
     public static boolean isSameDirectory(Path dir1, Path dir2) throws IOException {
         try (Stream<Path> files1 = Files.walk(dir1);
              Stream<Path> files2 = Files.walk(dir2)) {
@@ -84,5 +97,36 @@ public class Directory {
             }
             return true;
         }
+    }
+
+
+    // 디렉터리 구조 제공
+    public List<FileNode> getDirectoryStructure(String basePath) throws IOException {
+
+        return getDirectoryRecursive(Path.of(basePath), Path.of(""));
+    }
+
+    private List<FileNode> getDirectoryRecursive(Path basePath, Path currentPath) throws IOException {
+        List<FileNode> result = new ArrayList<>();
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(rootDirPath.resolve(basePath).resolve(currentPath))) {
+            for (Path path : stream) {
+                String relativePath = basePath.resolve(currentPath).resolve(path.getFileName()).toString().replace("\\", "/");
+                FileNode node = new FileNode(path.getFileName().toString(), relativePath, Files.isDirectory(path));
+
+                if (Files.isDirectory(path)) {
+                    node.setChildren(getDirectoryRecursive(basePath, currentPath.resolve(path.getFileName())));
+                }
+
+                result.add(node);
+            }
+        }
+        return result;
+    }
+
+    //파일 내용 제공
+    public String getFileContents(String filePath) throws IOException {
+        Path fullPath = rootDirPath.resolve(filePath);
+        return Files.readString(fullPath, StandardCharsets.UTF_8);
     }
 }

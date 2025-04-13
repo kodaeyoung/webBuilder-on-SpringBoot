@@ -1,6 +1,6 @@
 package com.project.webBuilder.deploy.service;
 
-import com.project.webBuilder.common.dir.Directory;
+import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
 import com.project.webBuilder.deploy.entities.DeployEntity;
@@ -53,7 +53,7 @@ public class DeployService {
             Files.createDirectories(newDeployPath);
         }
 
-        Directory.copyDirectory(projectAbsolutePath, newDeployPath);
+        DirectoryService.copyDirectory(projectAbsolutePath, newDeployPath);
 
         //DB에 저장하기 위해서 상대경로로 변환
         Path newDeployRelativePath=rootDirPath.relativize(newDeployPath);
@@ -96,7 +96,7 @@ public class DeployService {
 
         try {
             if (Files.exists(deployAbsolutePath)) {
-                Directory.deleteDirectory(deployAbsolutePath);
+                DirectoryService.deleteDirectory(deployAbsolutePath);
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to delete deployed files.", e);
@@ -142,13 +142,13 @@ public class DeployService {
         }
 
         // 5. 변경 여부 비교
-        boolean isSame = Directory.isSameDirectory(projectAbsolutePath, deployAbsolutePath);
+        boolean isSame = DirectoryService.isSameDirectory(projectAbsolutePath, deployAbsolutePath);
         if (isSame) {
             throw new RuntimeException("No changes detected. Deployment not needed.");
         }
 
         // 6. 덮어쓰기
-        Directory.copyDirectory(projectAbsolutePath, deployAbsolutePath);
+        DirectoryService.copyDirectory(projectAbsolutePath, deployAbsolutePath);
 
         // 7. Dashboard 상태 업데이트
         dashboardEntity.updateModified(false);
