@@ -129,7 +129,8 @@ public class GenerateService {
     //복사된 프로젝트를 요구사항에 맞게 수정
     private void modify(String projectRelativePath, String features, String content){
 
-        DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(projectRelativePath);
+        DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(projectRelativePath)
+                .orElseThrow(()->new RuntimeException("Dashboard with " + projectRelativePath + " not found."));
 
         //프로젝트 절대경로 변경
         Path rootDirPath = Paths.get(System.getProperty("user.dir"));
