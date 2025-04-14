@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.webBuilder.common.gpt.GptApi;
 import com.project.webBuilder.common.util.Extraction;
+import com.project.webBuilder.common.util.Screenshot;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
 import jakarta.transaction.Transactional;
@@ -112,16 +113,16 @@ public class ModifyService {
 
             // 8. 수정된 HTML을 파일에 덮어쓰기
             Files.writeString(htmlFilePath, gptResponse, StandardCharsets.UTF_8);
-/*
+
             // 9. 캡처 경로 생성
             Path screenshotPath = Paths.get(System.getProperty("user.dir")).resolve(dashboardEntity.getImagePath());
 
             // 10. 로컬 서버 주소
-            String localServerUrl = "http://localhost:8080" + directoryPath + "/index.html";
+            String localServerUrl = "http://localhost:8080/" + directoryPath + "/index.html";
 
             // 11. 캡처 (나중에 구현)
-            // captureScreenshot(localServerUrl, screenshotPath.toString());
-*/
+             Screenshot.takeScreenshot(localServerUrl, screenshotPath.toString());
+
             // 12. Dashboard 업데이트
             dashboardEntity.updateModified(true);
             dashboardRepository.save(dashboardEntity);

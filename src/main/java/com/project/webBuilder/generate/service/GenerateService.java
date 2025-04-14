@@ -2,6 +2,7 @@ package com.project.webBuilder.generate.service;
 
 import com.project.webBuilder.common.gpt.GptApi;
 import com.project.webBuilder.common.util.Extraction;
+import com.project.webBuilder.common.util.Screenshot;
 import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
@@ -160,7 +161,9 @@ public class GenerateService {
                         String screenshotName = dashboardEntity.getProjectName()+"_"+ dashboardEntity.getEmail()+"_"+System.currentTimeMillis()+".png";
                         Path newImageAbsolutePath = rootDirPath.resolve("store/dashboardImage").resolve(screenshotName);
                         // Optional: 캡쳐 로직 삽입 가능
-                        System.out.println("📸 index.html 수정됨 - 스크린샷 로직 실행 위치");
+                        String url = String.format("http://localhost:8080/%s/index.html",dashboardEntity.getProjectPath());
+                        Screenshot.takeScreenshot(url, String.valueOf(newImageAbsolutePath));
+                        System.out.println("index.html 수정됨 - 스크린샷 로직 실행 위치");
 
                         Path newImageRelatvePath = rootDirPath.relativize(newImageAbsolutePath);
                         dashboardEntity.updateImagePath(newImageRelatvePath.toString().replace("\\", "/"));

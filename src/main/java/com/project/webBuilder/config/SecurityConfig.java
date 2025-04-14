@@ -23,7 +23,8 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/", "/sharedTemplateStore/getAll").permitAll() // 모든 사용자가 접근 가능
+                        .requestMatchers("/", "/sharedTemplateStore/get-all"
+                                ,"/**/index.html","/**/*.css","/**/*.scss","/**/*.js","/**/*.png").permitAll() // 모든 사용자가 접근 가능
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증된 사용자만 접근 가능
                 )// 요청 URL에 따른 권한을 설정
 
