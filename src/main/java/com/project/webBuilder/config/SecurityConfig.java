@@ -16,6 +16,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
@@ -40,7 +42,7 @@ public class SecurityConfig {
                                 .userService(customOauth2UserService) // OAuth 2 로그인 성공 이후 사용자 정보를 가져올 때의 설정
                         )
                 )
-
+//                .cors(withDefaults()) // CORS 설정 활성화
 /*
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling
@@ -48,10 +50,7 @@ public class SecurityConfig {
                                     // 인증되지 않은 사용자가 접근했을 때 리다이렉트할 URL 설정
                                     response.sendRedirect("http://localhost:3000/login");  // 인증되지 않은 사용자는 /login으로 리다이렉트
                                 })
-
-
                 )*/;
-
         return http.build();
     }
 
