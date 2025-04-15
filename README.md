@@ -1,6 +1,5 @@
 ## 개요
-2024년에 진행한 [생성형 AI] 인공지능을 활용한 NO-CODE 기반 웹 빌더 프로젝트를 Spring Framework 환경에 마이그레이션한다.
-
+2024년에 진행한 [생성형 AI] 인공지능을 활용한 NO-CODE 기반 웹 빌더 프로젝트(https://github.com/hanium0111) 를 Spring Framework 환경에 마이그레이션한다.
 ## 필요성
 기존 프로젝트는 Node.js + Express.js로 구성되어 있었으나, 인터프리터 언어 특성상 런타임 중 예기치 않게 다운될 가능성이 있고, 보안 취약점이 발생할 위험이 있다. 이러한 문제를 해결하기 위해 Spring Framework 기반으로 프로젝트를 재구성한다.
 
