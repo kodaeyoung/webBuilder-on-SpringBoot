@@ -13,6 +13,28 @@ Spring Boot를 활용하여 백엔드 API를 재구성하고, 체계적인 코�
 - java 17
 - Spring Boot 3.4.4
 
+## 변경 사항
+
+### 기술 변경
+| 기능 | Node.js | SpringBoot |
+|---|---|---|
+|사용자 인증|passport|spring security|
+|스크린샷|puppeteer|selenium+chrome driver
+|ORM|Sequelize|JPA|
+
+### 내부 로직 변경
+
+1. generate
+	- 기존에는 사용자에게 입력 받은 websiteType, feature, content, mood 를 기준으로 템플릿을 선택하고 수정하게 하였지만, 현재는 websiteType, mood 를 기준으로 템플릿을 선택하게 하고, feature와 content를 기준으로 템플릿을 수정하도록 하였음
+
+2. 대시보드와 공유 템플릿의 의존성 제거
+	- 기존에는 대시보드와 공유 템플릿이 1대1 관계를 필수로 가졌지만, 현재는 대시보드와 공유 템플릿의 매핑 관계를 제거하고, 공유 템플릿을 user 테이블과 매핑하였음.
+	이를 통해 대시보드와 공유 템플릿은 간접적으로 1대n 관계를 가지게 됨
+
+### 삭제된 기능
+1. 공유 템플릿 좋아요 기능 삭제
+
+
 
 ## ERD
 ![ERD](ERD.png)
@@ -136,4 +158,11 @@ tasks.named('test') {
 
 ```
 
-
+## 로컬에서 실행시키는 방법
+1. 프로젝트 clone 
+2. 버전에 맞게 spring boot 프로젝트 생성 후 src/main/java에 clone 받은 코드 추가
+3. Google API Console에 프로젝트 등록 및 OAuth2 설정 및 키 발급
+4. Google API console에 Google Custom Search Api 등록 및 키 발급(기능 불필요 시 modify/service/modifyService의 64~67 라인 및 convertDomElementSrcPath,modifyImageElementFromPrompt 주석처리리)
+5. application.property 및 build.gradle 작성
+6. 로컬에 설치된 chrome버전의 맞게 Chromedriver.exe 다운로드 후 프로젝트 루트디렉터리 하위에 추가 
+7. 프로젝트 실행 후 postman으로 요청(프론트엔드 ui 필요 시(https://github.com/hanium0111)의 frontEnd 부분 커스터마이징 하여 사용)
