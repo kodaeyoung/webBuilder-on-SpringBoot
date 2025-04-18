@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +31,7 @@ public class SharedTemplateController {
         List<SharedTemplateDTO> sharedTemplateDTO = sharedTemplateService.getAllSharedTemplateDTO();
 
         if (sharedTemplateDTO.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);  // 템플릿이 없으면 204 No Content 반환4
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);  // 템플릿이 없으면 204 No Content 반환
         }
         return new ResponseEntity<>(sharedTemplateDTO, HttpStatus.OK);
     }
@@ -37,8 +39,8 @@ public class SharedTemplateController {
     // 공유된 템플릿 사용
     @PostMapping("/use")
     public ResponseEntity<DashboardDTO> useSharedTemplates(@RequestBody Map<String,Object> body, HttpSession session) throws IOException {
-        Long id = Long.parseLong((String)body.get("id"));
-        String projectName = (String)body.get("projectName");
+        Long id = Long.parseLong(String.valueOf(body.get("selectedTemplateId")));
+        String projectName = String.valueOf(body.get("projectName"));
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
         String email =userDTO.getEmail();
         DashboardDTO dashboardDTO = sharedTemplateService.useSharedTemplate(id,projectName,email);
@@ -66,7 +68,11 @@ public class SharedTemplateController {
         try{
             boolean remove = sharedTemplateService.removeSharedTemplate(id);
             if(remove){
-                return ResponseEntity.ok("SharedTemplate remove successfully");
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "SharedTemplate removed successfully",
+                        "id", id
+                ));
             }else{
                 return ResponseEntity.status(404).body("SharedTemplate not found");
             }
@@ -79,8 +85,9 @@ public class SharedTemplateController {
     @GetMapping("/{templateDir}")
     public ResponseEntity<Void> forwardSharedTemplate(@PathVariable String templateDir) {
         // sharedTemplate/{templateDir}/index.html로 포워드
+        String encodedDir = URLEncoder.encode(templateDir, StandardCharsets.UTF_8);
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/sharedTemplate/" + templateDir + "/index.html")
+                .header(HttpHeaders.LOCATION, "/sharedTemplate/" + encodedDir + "/index.html")
                 .build();
     }
 

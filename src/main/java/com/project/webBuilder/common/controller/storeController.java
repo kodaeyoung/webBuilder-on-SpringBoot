@@ -38,4 +38,22 @@ public class storeController {
                 .header(HttpHeaders.LOCATION, newUri)
                 .build();
     }
+
+    @GetMapping("/sharedTemplateImage/**")
+    public ResponseEntity<Void> handleSharedTemplateImage(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String newUri = uri.replace("/store", "");  // '/store' 부분을 제거
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, newUri)
+                .build();
+    }
+
+    @GetMapping("/dashboardImage/**")
+    public ResponseEntity<Void> handleDashboardImage(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String newUri = uri.replace("/store", "");  // '/store' 부분을 제거
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, newUri)
+                .build();
+    }
 }

@@ -5,6 +5,8 @@ import com.project.webBuilder.user.dto.UserDTO;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class SharedTemplateDTO {
     private Long id;
@@ -15,12 +17,12 @@ public class SharedTemplateDTO {
     private String category;
     private String templatePath;
     private String imagePath;
-
+    private LocalDateTime createdAt;
 
     @Builder
     public SharedTemplateDTO(Long id, String templateName, String userName,
                              String email, String profileImageUrl, String category, String templatePath,
-                             String imagePath) {
+                             String imagePath, LocalDateTime createdAt) {
         this.id = id;
         this.templateName = templateName;
         this.userName = userName;
@@ -29,6 +31,7 @@ public class SharedTemplateDTO {
         this.category = category;
         this.templatePath = templatePath;
         this.imagePath = imagePath;
+        this.createdAt = createdAt;
     }
 
     public static SharedTemplateDTO fromEntity(SharedTemplateEntity sharedTemplatesEntity, UserDTO userDTO) {
@@ -40,7 +43,8 @@ public class SharedTemplateDTO {
                 userDTO.getPicture(), // UserEntity에서 profileImageUrl을 가져옴
                 sharedTemplatesEntity.getCategory(),
                 sharedTemplatesEntity.getTemplatePath(),
-                sharedTemplatesEntity.getImagePath()
+                sharedTemplatesEntity.getImagePath(),
+                sharedTemplatesEntity.getCreatedAt()
         );
     }
 

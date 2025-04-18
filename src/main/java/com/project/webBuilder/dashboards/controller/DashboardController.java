@@ -2,6 +2,7 @@ package com.project.webBuilder.dashboards.controller;
 
 import com.project.webBuilder.dashboards.dto.DashboardDTO;
 import com.project.webBuilder.dashboards.service.DashboardService;
+import com.project.webBuilder.sharedTemplates.dto.SharedTemplateDTO;
 import com.project.webBuilder.user.dto.UserDTO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +44,7 @@ public class DashboardController {
             boolean updated = dashboardService.updateProjectName(id,newName);
 
             if (updated) {
-                return ResponseEntity.ok("Project name updated successfully");
+                return ResponseEntity.ok(Map.of("id", id, "projectName", newName));
             } else {
                 return ResponseEntity.status(404).body("Project not found");
             }
@@ -54,15 +57,15 @@ public class DashboardController {
     @PostMapping("/share")
     public ResponseEntity<?> projectShare(@RequestBody Map<String,Object> body , HttpSession session){
         UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
-        Long id = Long.parseLong((String)body.get("id"));
+        Long id = Long.parseLong(String.valueOf(body.get("selectedProjectId")));
         String templateName = (String) body.get("templateName");
         String category = (String) body.get("category");
 
         try{
-            boolean shared = dashboardService.projectShare(id,templateName,category,userDTO);
+            SharedTemplateDTO sharedTemplateDTO = dashboardService.projectShare(id,templateName,category,userDTO);
 
-            if(shared){
-                return ResponseEntity.ok("project shared successfully");
+            if(sharedTemplateDTO!=null){
+                return ResponseEntity.ok(Map.of("success","project shared successfully","sharedTemplate",sharedTemplateDTO));
             }else{
                 return ResponseEntity.status(404).body("project not found");
             }
@@ -90,8 +93,9 @@ public class DashboardController {
     @GetMapping("/{dashboardDir}")
     public ResponseEntity<Void> forwardSharedTemplate(@PathVariable String dashboardDir) {
         // sharedTemplate/{dashboarDir}/index.html로 포워드
+        String encodedDir = URLEncoder.encode(dashboardDir, StandardCharsets.UTF_8);
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/sharedTemplate/" + dashboardDir + "/index.html")
+                .header(HttpHeaders.LOCATION, "/sharedTemplate/" + encodedDir + "/index.html")
                 .build();
     }
 }

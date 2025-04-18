@@ -3,6 +3,8 @@ package com.project.webBuilder.dashboards.dto;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class DashboardDTO {
 
@@ -14,10 +16,11 @@ public class DashboardDTO {
     private String email;
     private String deployDomain;
     private Boolean publish;
+    private LocalDateTime modifiedAt;
 
     public DashboardDTO(Long id, String projectName, String projectPath, Boolean modified,
                         String imagePath, String email, String deployDomain,
-                        Boolean publish) {
+                        Boolean publish , LocalDateTime modifiedAt) {
         this.id = id;
         this.projectName = projectName;
         this.projectPath = projectPath;
@@ -26,6 +29,7 @@ public class DashboardDTO {
         this.email = email;
         this.deployDomain = deployDomain;
         this.publish = publish;
+        this.modifiedAt = modifiedAt;
     }
 
     public static DashboardDTO fromEntity(DashboardEntity dashboardEntity) {
@@ -37,7 +41,8 @@ public class DashboardDTO {
                 dashboardEntity.getImagePath(),
                 dashboardEntity.getEmail(),
                 dashboardEntity.getDeployDomain(),
-                dashboardEntity.getPublish()
+                dashboardEntity.getPublish(),
+                dashboardEntity.getModifiedAt()
         );
     }
 }

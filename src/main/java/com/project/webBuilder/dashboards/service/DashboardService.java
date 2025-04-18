@@ -46,7 +46,7 @@ public class DashboardService {
     }
 
     //대시보드 공유
-    public boolean projectShare(Long id, String templateName, String category, UserDTO userDTO) throws IOException {
+    public SharedTemplateDTO projectShare(Long id, String templateName, String category, UserDTO userDTO) throws IOException {
 
         Optional<DashboardEntity> optionalDashboardEntity = dashboardRepository.findById(id);
 
@@ -85,7 +85,7 @@ public class DashboardService {
             Path newSharedImageRelativePath = rootDirPath.relativize(newImagePath);
 
 
-            // dashboard 테이블에 새 데이터 저장
+            // sharedTemplate 테이블에 새 데이터 저장
             SharedTemplateEntity newSharedTemplate = SharedTemplateEntity.builder()
                     .templateName((templateName != null) ? templateName : "default")
                     .templatePath(newSharedTemplateRelativePath.toString().replace("\\", "/"))
@@ -95,8 +95,8 @@ public class DashboardService {
                     .build();
 
             sharedTemplateRepository.save(newSharedTemplate);
-
-            return true;
+            SharedTemplateDTO sharedTemplateDTO = SharedTemplateDTO.fromEntity(newSharedTemplate,userDTO);
+            return sharedTemplateDTO;
         } else {
             throw new IllegalArgumentException("Template not found");
         }

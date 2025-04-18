@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -17,8 +19,8 @@ public class DeployController {
     // 프로젝트 배포하기
     @PostMapping("/deploy")
     public ResponseEntity<?> deployProject(@RequestBody Map<String,Object> body){
-        Long id = Long.parseLong((String)body.get("id"));
-        String deployName =(String) body.get("deployName");
+        Long id = Long.parseLong(String.valueOf(body.get("id")));
+        String deployName = String.valueOf(body.get("deployName"));
 
         try {
             boolean deploy = deployService.deployProject(id,deployName);
@@ -35,7 +37,7 @@ public class DeployController {
     //프로젝트 배포 중지
     @PostMapping("/undeploy")
     public ResponseEntity<?> undeployProject(@RequestBody Map<String,Object> body){
-        Long id = Long.parseLong((String)body.get("id"));
+        Long id = Long.parseLong(String.valueOf(body.get("id")));
         try {
             boolean undeploy = deployService.undeployProject(id);
             if(undeploy){
@@ -51,7 +53,7 @@ public class DeployController {
     // 프로젝트 배포 업데이트
     @PostMapping("update-deploy")
     public ResponseEntity<?> updateDeploy(@RequestBody Map<String,Object> body){
-        Long id = Long.parseLong((String)body.get("id"));
+        Long id = Long.parseLong(String.valueOf(body.get("id")));
         try {
             boolean update = deployService.updateDeploy(id);
             if(update){
@@ -66,9 +68,11 @@ public class DeployController {
 
     @GetMapping("/deploy/{deployDir}")
     public ResponseEntity<Void> forwardDeploy(@PathVariable String deployDir) {
-        // sharedTemplate/{dashboarDir}/index.html로 포워드
+        // 경로 인코딩
+        String encodedDir = URLEncoder.encode(deployDir, StandardCharsets.UTF_8);
+
         return ResponseEntity.status(HttpStatus.FOUND)
-                .header(HttpHeaders.LOCATION, "/deploy/" + deployDir + "/index.html")
+                .header(HttpHeaders.LOCATION, "/deploy/" + encodedDir + "/index.html")
                 .build();
     }
 
