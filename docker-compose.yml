@@ -1,0 +1,43 @@
+services:
+  # Spring Boot 애플리케이션 서비스
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env  # .env 파일을 자동으로 로드해서 환경 변수로 설정
+    depends_on:
+      - db  # db 서비스가 준비된 후에 앱을 실행합니다.
+    volumes:
+      - ./store:/app/store  # 로컬 프로젝트의 store 디렉토리와 컨테이너 내 store 디렉토리 연결
+
+
+  # Next.js 클라이언트 서비스
+  nextjs:
+    build:
+      context: ./FE  # FE 디렉토리를 빌드 컨텍스트로 설정
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./FE:/app  # 로컬 FE 디렉토리와 컨테이너 내 디렉토리 연결
+    working_dir: /app  # 작업 디렉토리를 /app으로 설정
+    command: npm run dev  # Next.js 개발 모드로 실행
+    depends_on:
+      - app  # db 서비스가 준비된 후에 nextjs 서비스를 실행
+
+
+
+  # MariaDB 서비스
+  db:
+    image: mariadb:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: root  # MariaDB root 비밀번호 설정
+      MYSQL_DATABASE: web_builder           # 기본 데이터베이스 생성
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb-data:/var/lib/mysql  # 데이터 지속성 확보를 위해 볼륨 사용
+
+# 데이터 볼륨 정의
+volumes:
+  mariadb-data:
