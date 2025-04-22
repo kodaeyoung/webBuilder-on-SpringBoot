@@ -70,9 +70,10 @@ server.use-forward-headers=true
 #mariaDB
 spring.jpa.hibernate.ddl-auto=update
 spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
-spring.datasource.url=jdbc:mariadb://localhost:3307/web_builder
-spring.datasource.username={username}
-spring.datasource.password={password}
+spring.datasource.url=${SPRING_DATASOURCE_URL}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MariaDBDialect
 
 #static resource
 
@@ -80,9 +81,6 @@ spring.web.resources.static-locations=file:./store/,classpath:/static/
 
 
 #OAuth2
-
-google.client-id={google.client-id}
-google.client-secret={google.client-secret}
 
 #google oauth2.0 registration
 spring.security.oauth2.client.registration.google.client-id=${google.client-id}
@@ -93,13 +91,18 @@ spring.security.oauth2.client.provider.google.authorization-uri=https://accounts
 
 
 #openAI key
-openai.api.key={openai.api.key}
+openai.api.key=${openai.key}
 
 # google custom search image
-google.pse.id={YOUR_PSE_ID}
-google.api.key={YOUR_API_KEY}
+google.pse.id=${pse.id}
+google.api.key=${cse.key}
 
 spring.mvc.pathmatch.matching-strategy=ant_path_matcher
+
+#security ??
+logging.level.org.springframework.security.web.FilterChainProxy=DEBUG
+logging.level.org.springframework.security=DEBUG
+
 ```
 
 ## build.gradle
@@ -158,11 +161,25 @@ tasks.named('test') {
 
 ```
 
-## 로컬에서 실행시키는 방법
+## 포트트
+backend : localhost:8080\
+frontend : localhost:4000
+
+## 프로젝트 복원 방법
 1. 프로젝트 clone 
-2. 버전에 맞게 spring boot 프로젝트 생성 후 src/main/java에 clone 받은 코드 추가
+2. 버전에 맞게 spring boot 프로젝트 생성 후 src/main/java에 clone 받은 코드 적용
 3. Google API Console에 프로젝트 등록 및 OAuth2 설정 및 키 발급
 4. Google API console에 Google Custom Search Api 등록 및 키 발급(기능 불필요 시 modify/service/modifyService의 64~67 라인 및 convertDomElementSrcPath,modifyImageElementFromPrompt 주석처리리)
-5. application.property 및 build.gradle 작성
+5. application.property 및 build.gradle 작성(README참고고)
 6. 로컬에 설치된 chrome버전의 맞게 Chromedriver.exe 다운로드 후 프로젝트 루트디렉터리 하위에 추가 
-7. 프로젝트 실행 후 postman으로 요청(프론트엔드 ui 필요 시(https://github.com/hanium0111)의 frontEnd 부분 커스터마이징 하여 사용)
+7. 프로젝트 실행 후 postman으로 요청으로 API 테스트
+8. 프론트엔드 적용 시 FE디렉터리에서 npm run dev 실행
+- 이미지 미리보기 기능은 현재 docker 기준으로 작성되어있음. 로컬환경에서 docker 없이 실행 시 (dash.js, template.js에서 IMAGE 컴포넌트를 app:8080에서 localhost:8080으로 변경해줘야 함)
+
+
+## docker 환경 실행 방법
+
+1. .env파일을 추가하여 application.property에 필요한 환경변수 정의
+2. 빌드 후 jar파일 생성 후 docker-compose 실행
+
+
