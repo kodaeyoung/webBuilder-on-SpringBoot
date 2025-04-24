@@ -19,14 +19,23 @@ const GenerateBox = ({ projectPath }) => {
   const [loading, setLoading] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const contentRef = useRef(null);
-
+  const [jwt, setJwt] = useState(null);
   const router = useRouter();
+
+  
+  useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
 
   const fetchDirectoryContents = async (dirPath) => {
     const res = await fetch(
       `http://localhost:8080/get-structure/dir?path=${dirPath}`,{
         method: "GET",
-        credentials: "include",
+          headers: {
+          Authorization: `Bearer ${jwt}`,
+          "Content-Type": "application/json",
+          },
       }
     );
     const json = await res.json();
@@ -47,12 +56,14 @@ const GenerateBox = ({ projectPath }) => {
             await processDirectory(child);
         }
     }
-};
+  };
 
   const fetchFileData = async () => {
     const initialData = await fetchDirectoryContents(projectPath);
 
     await processDirectory({ isDirectory: true, children: initialData });
+
+    
 
     const findIndexFile = (files) => {
       for (const file of files) {
@@ -66,6 +77,7 @@ const GenerateBox = ({ projectPath }) => {
       return null;
     };
 
+    
     const indexHtmlFile = findIndexFile(initialData);
     setIndexFile(indexHtmlFile);
     setIndexFileState(indexHtmlFile);
@@ -76,13 +88,18 @@ const GenerateBox = ({ projectPath }) => {
   };
 
   useEffect(() => {
-    fetchFileData();
-  }, [projectPath]);
+    if (jwt && projectPath) {
+      fetchFileData();
+    }
+  }, [jwt,projectPath]);
 
   const fetchFileContent = async (filePath) => {
     const res = await fetch(`http://localhost:8080/get-content/file?path=${filePath}`,{
       method: "GET",
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+      },
     });
     const content = await res.text();
     setFileContent(content);
@@ -312,10 +329,11 @@ const GenerateBox = ({ projectPath }) => {
         {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-          credentials: "include",
+          
         }
       );
 

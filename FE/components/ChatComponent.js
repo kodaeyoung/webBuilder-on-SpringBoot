@@ -28,15 +28,26 @@ export default function ChatComponent() {
   const [userName, setUserName] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [jwt, setJwt] = useState(null);
 
   const chatBoxRef = useRef(null);
   const router = useRouter();
 
+
   useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!jwt) return;
     const fetchUserProfile = async () => {
       try {
         const response = await fetch("http://localhost:8080/profile", {
-          credentials: "include",
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+              "Content-Type": "application/json",
+            },
         });
         const data = await response.json();
 
@@ -53,7 +64,7 @@ export default function ChatComponent() {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [jwt]);
 
   useEffect(() => {
     const fullText = userName
@@ -156,10 +167,10 @@ export default function ChatComponent() {
         {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(requestData),
-          credentials: "include",
         }
       );
 

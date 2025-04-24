@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +26,8 @@ public class DashboardController {
 
     //사용자 대시보드 호출
     @GetMapping("/my-dashboard")
-    public ResponseEntity<List<DashboardDTO>> myDashboard(HttpSession session){
-        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
+    public ResponseEntity<List<DashboardDTO>> myDashboard(Authentication authentication){
+        UserDTO userDTO = (UserDTO) authentication.getPrincipal();
         String email = userDTO.getEmail();
         List<DashboardDTO> dashboardDTO = dashboardService.getUserDashboard(email);
 
@@ -55,8 +56,8 @@ public class DashboardController {
 
     //프로젝트 공유
     @PostMapping("/share")
-    public ResponseEntity<?> projectShare(@RequestBody Map<String,Object> body , HttpSession session){
-        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
+    public ResponseEntity<?> projectShare(@RequestBody Map<String,Object> body , Authentication authentication){
+        UserDTO userDTO = (UserDTO) authentication.getPrincipal();
         Long id = Long.parseLong(String.valueOf(body.get("selectedProjectId")));
         String templateName = (String) body.get("templateName");
         String category = (String) body.get("category");

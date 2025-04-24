@@ -43,6 +43,7 @@ const initialState = {
   noDifferences: {},
 };
 
+
 // 리듀서 함수 정의
 function reducer(state, action) {
   switch (action.type) {
@@ -140,13 +141,23 @@ const DropdownMenu = ({
 
 export default function Dash() {
   const router = useRouter();
+  const [jwt, setJwt] = useState(null);
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!jwt) return;
     const fetchProfileData = async () => {
       try {
         const response = await fetch("http://localhost:8080/profile", {
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         });
         const data = await response.json();
 
@@ -166,18 +177,23 @@ export default function Dash() {
     };
 
     fetchProfileData();
-  }, []);
+  }, [jwt]);
 
   useEffect(() => {
+    if (!jwt) return;
     fetchAllProjects(); //마운트 시 한 번 실행
-  }, []);
+  }, [jwt]);
 
   // 모든 프로젝트 가져오기
 const fetchAllProjects = async () => {
+  if (!jwt) return;
   try {
     const res = await fetch("http://localhost:8080/dashboard/my-dashboard", {
       method: "GET",
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+      },
     });
 
     if (!res.ok) {
@@ -206,9 +222,13 @@ const fetchAllProjects = async () => {
 
 // 공유한 템플릿 가져오기
 const fetchSharedTemplates = async () => {
+  if (!jwt) return;
   try {
     const res = await fetch("http://localhost:8080/sharedTemplate/get-mine", {
-      credentials: "include",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+      },
     });
 
     if (!res.ok) {
@@ -235,10 +255,10 @@ const fetchSharedTemplates = async () => {
       const res = await fetch("http://localhost:8080/update-deploy", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ id: projectId }),
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -307,10 +327,10 @@ const fetchSharedTemplates = async () => {
       const res = await fetch("http://localhost:8080/deploy", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -347,10 +367,10 @@ const fetchSharedTemplates = async () => {
       const res = await fetch("http://localhost:8080/undeploy", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -379,10 +399,10 @@ const fetchSharedTemplates = async () => {
       const res = await fetch("http://localhost:8080/deploy/update", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ id: projectId }),
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -437,7 +457,10 @@ const fetchSharedTemplates = async () => {
         `http://localhost:8080/dashboard/${state.selectedProject.id}/update-name?newName=${encodeURIComponent(state.projectName)}`,
         {
           method: "PATCH",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
@@ -475,7 +498,10 @@ const fetchSharedTemplates = async () => {
         `http://localhost:8080/dashboard/${state.selectedProject.id}/remove`,
         {
           method: "DELETE",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
@@ -514,6 +540,7 @@ const fetchSharedTemplates = async () => {
         {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -521,7 +548,6 @@ const fetchSharedTemplates = async () => {
             templateName: state.templateName,
             category: state.category,
           }),
-          credentials: "include",
         }
       );
 
@@ -548,7 +574,10 @@ const fetchSharedTemplates = async () => {
         `http://localhost:8080/sharedTemplate/${state.selectedTemplate.id}/remove`,
         {
           method: "DELETE",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 

@@ -5,6 +5,7 @@ import com.project.webBuilder.user.dto.UserDTO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,9 +19,9 @@ public class GenerateController {
 
     private final GenerateService generateService;
     @PostMapping("generate")
-    public ResponseEntity<?> generatePage(@RequestBody Map<String,Object> body, HttpSession session) throws IOException {
-        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
-        String email =userDTO.getEmail();
+    public ResponseEntity<?> generatePage(@RequestBody Map<String,Object> body, Authentication authentication) throws IOException {
+        UserDTO userDTO = (UserDTO) authentication.getPrincipal();
+        String email = userDTO.getEmail();
 
         try{
             boolean generate = generateService.generate(body,email);

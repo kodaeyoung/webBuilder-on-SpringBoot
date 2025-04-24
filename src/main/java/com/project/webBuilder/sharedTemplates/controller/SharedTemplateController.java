@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -38,11 +39,11 @@ public class SharedTemplateController {
 
     // 공유된 템플릿 사용
     @PostMapping("/use")
-    public ResponseEntity<DashboardDTO> useSharedTemplates(@RequestBody Map<String,Object> body, HttpSession session) throws IOException {
+    public ResponseEntity<DashboardDTO> useSharedTemplates(@RequestBody Map<String,Object> body, Authentication authentication) throws IOException {
         Long id = Long.parseLong(String.valueOf(body.get("selectedTemplateId")));
         String projectName = String.valueOf(body.get("projectName"));
-        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
-        String email =userDTO.getEmail();
+        UserDTO userDTO = (UserDTO) authentication.getPrincipal();
+        String email = userDTO.getEmail();
         DashboardDTO dashboardDTO = sharedTemplateService.useSharedTemplate(id,projectName,email);
 
         return new ResponseEntity<>(dashboardDTO, HttpStatus.OK);
@@ -51,8 +52,8 @@ public class SharedTemplateController {
 
     //로그인한 사용자가 공유한 템플릿 호출
     @GetMapping("get-mine")
-    public ResponseEntity<List<SharedTemplateDTO>> getMySharedTemplates(HttpSession session){
-        UserDTO userDTO = (UserDTO) session.getAttribute("userDTO");
+    public ResponseEntity<List<SharedTemplateDTO>> getMySharedTemplates(Authentication authentication){
+        UserDTO userDTO = (UserDTO) authentication.getPrincipal();
         String email = userDTO.getEmail();
         List<SharedTemplateDTO> sharedTemplateDTO = sharedTemplateService.getMySharedTemplates(email);
 

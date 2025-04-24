@@ -4,6 +4,9 @@ import Image from "next/image";
 import styles from "./ProfileBox.module.css";
 
 export default function ProfileBox() {
+
+  const [jwt, setJwt] = useState(null);
+
   const [profileData, setProfileData] = useState({
     name: "",
     picture: "",
@@ -11,10 +14,20 @@ export default function ProfileBox() {
   const router = useRouter();
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (!jwt) return;
     const fetchProfileData = async () => {
       try {
+
         const response = await fetch("http://localhost:8080/profile", {
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         });
         const data = await response.json();
 
@@ -32,13 +45,16 @@ export default function ProfileBox() {
     };
 
     fetchProfileData();
-  }, []);
+  }, [jwt]);
 
   const handleLogout = async () => {
     try {
       const response = await fetch("http://localhost:8080/logout", {
         method: "Post",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (response.ok) {

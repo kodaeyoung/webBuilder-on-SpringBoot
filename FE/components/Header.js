@@ -23,13 +23,23 @@ Modal.setAppElement("#__next");
 export default function Header() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [jwt,setJwt] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
+
+  useEffect(() => {
     const checkLoginStatus = async () => {
+      if (!jwt) return;
       try {
         const response = await fetch("http://localhost:8080/profile", {
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         });
         const data = await response.json();
 
@@ -45,7 +55,7 @@ export default function Header() {
     };
 
     checkLoginStatus();
-  }, []);
+  }, [jwt]);
 
   const togglePopup = () => {
     setIsPopupOpen(!isPopupOpen);

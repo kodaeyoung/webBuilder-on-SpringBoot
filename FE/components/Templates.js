@@ -27,17 +27,30 @@ export default function Templates({ showMoreButton, showCategories }) {
   const [templateStructure, setTemplateStructure] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [categories, setCategories] = useState(["모든 카테고리"]);
+  const [jwt, setJwt] = useState(null);
 
   const router = useRouter();
 
   useEffect(() => {
+    const storedToken = localStorage.getItem("jwt");
+    setJwt(storedToken);
+  }, []);
+  
+
+  useEffect(() => {
+    if (!jwt) return;
     const fetchTemplates = async () => {
       try {
         const res = await fetch(
           "http://localhost:8080/sharedTemplate/get-all",
           {
             method: "get",
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+              "Content-Type": "application/json",
+            },
           }
+          
         );
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -58,13 +71,17 @@ export default function Templates({ showMoreButton, showCategories }) {
       }
     };
     fetchTemplates();
-  }, []);
+  }, [jwt]);
 
   useEffect(() => {
+    if (!jwt) return;
     const checkLoginStatus = async () => {
       try {
         const response = await fetch("http://localhost:8080/profile", {
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
         });
         const data = await response.json();
 
@@ -80,7 +97,7 @@ export default function Templates({ showMoreButton, showCategories }) {
     };
 
     checkLoginStatus();
-  }, []);
+  }, [jwt]);
 
   const filteredTemplates = templates
     .filter(
@@ -133,10 +150,10 @@ export default function Templates({ showMoreButton, showCategories }) {
         {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${jwt}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ projectName,selectedTemplateId }),
-          credentials: "include",
         }
       );
 

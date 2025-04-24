@@ -40,7 +40,6 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
         UserEntity user = saveOrUpdate(attributes);
-        httpSession.setAttribute("userDTO", UserDTO.fromEntity(user));
 
         //security에 넘겨주기 위한 객체
         return new DefaultOAuth2User(
