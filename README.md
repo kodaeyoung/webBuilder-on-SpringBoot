@@ -161,7 +161,7 @@ tasks.named('test') {
 
 ```
 
-## 포트트
+## 포트
 backend : localhost:8080\
 frontend : localhost:4000
 
