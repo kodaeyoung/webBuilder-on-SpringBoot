@@ -1,7 +1,7 @@
 package com.project.webBuilder.config;
 
 
-import com.project.webBuilder.auth.JwtAuthFilter;
+import com.project.webBuilder.auth.jwt.JwtAuthFilter;
 import com.project.webBuilder.auth.CustomOauth2UserService;
 import com.project.webBuilder.auth.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
@@ -50,10 +50,12 @@ public class SecurityConfig {
                                 "/login").permitAll() // 모든 사용자가 접근 가능
                         .anyRequest().authenticated() // 나머지 모든 요청은 인증된 사용자만 접근 가능
                 )// 요청 URL에 따른 권한을 설정
+
+
                 .logout(logout -> logout
-                        .logoutUrl("/logout") // 로그아웃 경로
-                        .logoutSuccessUrl("http://localhost:4000") // 로그아웃 성공 후 이동 경로
-                        .invalidateHttpSession(true) // 세션 무효화
+                        .logoutRequestMatcher(request -> false) // 기본 로그아웃 필터 비활성화(직접 구현한 /logout이 호출되도록함)
+                        //.logoutSuccessUrl("http://localhost:4000") // 로그아웃 성공 후 이동 경로
+                        .invalidateHttpSession(false) // 세션 무효화
                         //.deleteCookies("JSESSIONID") // 쿠키 삭제
                 )//로그아웃 시 리다이렉트될 url
 
@@ -66,6 +68,10 @@ public class SecurityConfig {
                 )
                 .cors(withDefaults()) // CORS 설정 활성화
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
+                //jwt기반 사용으로 세션 비활성화
+                .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling
@@ -84,7 +90,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:4000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

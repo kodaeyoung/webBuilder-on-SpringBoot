@@ -1,6 +1,6 @@
 package com.project.webBuilder.auth;
 
-import com.project.webBuilder.common.util.JwtUtil;
+import com.project.webBuilder.auth.jwt.JwtUtil;
 import com.project.webBuilder.user.repositories.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

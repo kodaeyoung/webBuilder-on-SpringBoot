@@ -7,7 +7,10 @@ services:
     env_file:
       - .env  # .env 파일을 자동으로 로드해서 환경 변수로 설정
     depends_on:
-      - db  # db 서비스가 준비된 후에 앱을 실행합니다.
+      db:
+        condition: service_started # db 서비스가 준비된 후에 앱을 실행합니다.
+      redis:
+          condition: service_healthy
     volumes:
       - ./store:/app/store  # 로컬 프로젝트의 store 디렉토리와 컨테이너 내 store 디렉토리 연결
 
@@ -37,6 +40,16 @@ services:
       - "3307:3306"
     volumes:
       - mariadb-data:/var/lib/mysql  # 데이터 지속성 확보를 위해 볼륨 사용
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      retries: 10
 
 # 데이터 볼륨 정의
 volumes:

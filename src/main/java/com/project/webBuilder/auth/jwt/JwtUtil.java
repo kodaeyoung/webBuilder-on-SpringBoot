@@ -1,8 +1,9 @@
-package com.project.webBuilder.common.util;
+package com.project.webBuilder.auth.jwt;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,6 @@ public class JwtUtil {
     @PostConstruct
     public void init() {
         this.secretKey = Base64.getEncoder().encodeToString(rawKey.getBytes());
-        System.out.println("secretKey initialized: " + secretKey);
     }
 
     public String generateToken(String email) {
@@ -50,5 +50,13 @@ public class JwtUtil {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }

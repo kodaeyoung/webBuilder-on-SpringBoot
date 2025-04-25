@@ -3,7 +3,6 @@ package com.project.webBuilder.auth;
 import com.project.webBuilder.user.dto.UserDTO;
 import com.project.webBuilder.user.entities.UserEntity;
 import com.project.webBuilder.user.repositories.UserRepository;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -21,7 +20,6 @@ import java.util.Optional;
 @Service
 public class CustomOauth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
-    private final HttpSession httpSession;
 
 
     @Override
@@ -40,7 +38,6 @@ public class CustomOauth2UserService extends DefaultOAuth2UserService {
         OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
 
         UserEntity user = saveOrUpdate(attributes);
-
         //security에 넘겨주기 위한 객체
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority(
