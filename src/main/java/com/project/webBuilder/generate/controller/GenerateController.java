@@ -29,17 +29,7 @@ public class GenerateController {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
         String email = userDTO.getEmail();
-
-        try {
-            boolean generate = generateService.generate(body, email);
-            if (generate) {
-                return ResponseEntity.ok(new ApiResponse<>("Generate project successfully", null));
-            } else {
-                throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND);
-            }
-        } catch (Exception ex) {
-            // 예상치 못한 예외는 RuntimeException으로 던짐
-            throw new RuntimeException(ex);
-        }
+        generateService.generate(body, email);
+        return ResponseEntity.ok(new ApiResponse<>("Generate project successfully", null));
     }
 }

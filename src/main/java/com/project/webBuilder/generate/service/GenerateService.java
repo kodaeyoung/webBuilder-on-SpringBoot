@@ -1,5 +1,7 @@
 package com.project.webBuilder.generate.service;
 
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
 import com.project.webBuilder.global.gpt.GptApi;
 import com.project.webBuilder.global.util.Extraction;
 import com.project.webBuilder.global.util.Screenshot;
@@ -10,6 +12,7 @@ import com.project.webBuilder.generate.dto.BasicTemplateDTO;
 import com.project.webBuilder.generate.entities.BasicTemplateEntity;
 import com.project.webBuilder.generate.repository.BasicTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -32,7 +35,7 @@ public class GenerateService {
 
 
 
-    public boolean generate(Map<String,Object> body, String email) throws IOException {
+    public void generate(Map<String,Object> body, String email) throws IOException {
 
         //모든 basicTemplateDTO 호출
         List<BasicTemplateDTO> basicTemplateDTOS =getAllBasicTemplate();
@@ -51,76 +54,101 @@ public class GenerateService {
         String content =(String) body.get("content");
         modify(projectRelativePath,features,content);
 
-        return true;
     }
 
-    //모든 basicTemplateDTO 호출
-    private List<BasicTemplateDTO> getAllBasicTemplate(){
-        return basicTemplateRepository.findAllBasicTemplates();
+    // 모든 basicTemplateDTO 호출
+    private List<BasicTemplateDTO> getAllBasicTemplate() {
+        try {
+            List<BasicTemplateDTO> templates = basicTemplateRepository.findAllBasicTemplates();
+            if (templates == null || templates.isEmpty()) {
+                throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND, "No basicTemplates found in the database.");
+            }
+            return templates;
+        } catch (DataAccessException e) {
+            // 데이터베이스 관련 예외 처리
+            throw new RuntimeException("Database error occurred while fetching templates.", e);
+        }
     }
 
     //적절한 basicTemplate선택
     private Long selectTemplate(String websiteType, String mood, List<BasicTemplateDTO> basicTemplateDTOS) {
-
-        StringBuilder userContent = new StringBuilder();
-        userContent.append("The user provided the following requirements for a website:\n")
-                .append("- Type of website: ").append(websiteType).append("\n")
-                .append("- Mood: ").append(mood).append("\n\n")
-                .append("Based on these requirements, choose the most suitable template from the following list:\n");
-
-        for (int i = 0; i < basicTemplateDTOS.size(); i++) {
-            BasicTemplateDTO b = basicTemplateDTOS.get(i);
-            userContent.append("Template ").append(b.getId()).append(": ")
-                    .append(b.getWebsiteType()).append(" - ")
-                    .append(b.getMood()).append("\n");
+        if (basicTemplateDTOS == null || basicTemplateDTOS.isEmpty()) {
+            throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND, "No basicTemplates found in the database.");
         }
+        try {
+            StringBuilder userContent = new StringBuilder();
+            userContent.append("The user provided the following requirements for a website:\n")
+                    .append("- Type of website: ").append(websiteType).append("\n")
+                    .append("- Mood: ").append(mood).append("\n\n")
+                    .append("Based on these requirements, choose the most suitable template from the following list:\n");
 
-        userContent.append("\nIf there is a suitable template, respond with \"template:number\".\n")
-                .append("If no appropriate template is found, choose the closest match and respond with \"template:number\".");
+            for (int i = 0; i < basicTemplateDTOS.size(); i++) {
+                BasicTemplateDTO b = basicTemplateDTOS.get(i);
+                userContent.append("Template ").append(b.getId()).append(": ")
+                        .append(b.getWebsiteType()).append(" - ")
+                        .append(b.getMood()).append("\n");
+            }
 
-        String content = GptApi.gpt("You are a helpful assistant.",userContent.toString(),150);
+            userContent.append("\nIf there is a suitable template, respond with \"template:number\".\n")
+                    .append("If no appropriate template is found, choose the closest match and respond with \"template:number\".");
 
-        return Extraction.extractTemplateId(content.trim());
+            String content = GptApi.gpt("You are a helpful assistant.", userContent.toString(), 150);
+            Long templateId = Extraction.extractTemplateId(content.trim());
+
+            return templateId;
+        } catch (Exception e) {
+            throw new RuntimeException("An unexpected error occurred during template selection.", e);
+        }
     }
 
     //해당 basicTemplate 복사하여 프로젝트 생성
     private String copy(String email, String projectName, Long id) throws IOException {
         BasicTemplateEntity basicTemplateEntity = basicTemplateRepository.findById(id)
-                .orElseThrow(()->new RuntimeException("BasicTemplate with id"+id+"not found."));
+                .orElseThrow(()->new CustomException(ErrorCode.TEMPLATE_NOT_FOUND,"BasicTemplate with id"+id+"not found."));
 
         Path rootDirPath = Paths.get(System.getProperty("user.dir"));
 
         //선택된 basicTemplate의 절대경로
-        Path selectBasicTemplateAsolutePath = rootDirPath.resolve(basicTemplateEntity.getPath());
+        Path selectBasicTemplateAbsolutePath = rootDirPath.resolve(basicTemplateEntity.getPath());
 
         //사용자의 새 프로젝트 생성
         String newDirName = projectName + "_" +email + "_" + System.currentTimeMillis();
         Path newProjectPath = rootDirPath.resolve("store/dashboard").resolve(newDirName);
 
-        if(Files.notExists(newProjectPath)){
-            Files.createDirectories(newProjectPath);
+        try {
+            // 새 프로젝트 디렉터리 생성 (존재하지 않으면)
+            if (Files.notExists(newProjectPath)) {
+                Files.createDirectories(newProjectPath);
+            }
+            // 템플릿 파일 복사
+            DirectoryService.copyDirectory(selectBasicTemplateAbsolutePath, newProjectPath);
+        } catch (IOException e) {
+            throw new IOException("Error occurred while copying template files.", e);
         }
-
-        // 템플릿 파일 복사
-        DirectoryService.copyDirectory(selectBasicTemplateAsolutePath, newProjectPath);
 
         //상대 경로 변환
         Path newProjectRelativePath = rootDirPath.relativize(newProjectPath);
 
-        DashboardEntity newDashboard = DashboardEntity.builder()
-                .projectName((projectName!=null)?projectName:"default")
-                .projectPath(newProjectRelativePath.toString().replace("\\", "/"))
-                .modified(false)
-                .email(email)
-                .publish(false)
-                .build();
-        dashboardRepository.save(newDashboard);
+        try {
+            // Dashboard 엔티티 생성 및 저장
+            DashboardEntity newDashboard = DashboardEntity.builder()
+                    .projectName(projectName != null ? projectName : "default")
+                    .projectPath(newProjectRelativePath.toString().replace("\\", "/"))
+                    .modified(false)
+                    .email(email)
+                    .publish(false)
+                    .build();
+
+            dashboardRepository.save(newDashboard);
+        } catch (Exception e) {
+            throw new RuntimeException("Error occurred while saving the dashboard entity.", e);
+        }
 
         return newProjectRelativePath.toString();
     }
 
     //복사된 프로젝트를 요구사항에 맞게 수정
-    private void modify(String projectRelativePath, String features, String content){
+    private void modify(String projectRelativePath, String features, String content) throws IOException {
 
         DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(projectRelativePath)
                 .orElseThrow(()->new RuntimeException("Dashboard with " + projectRelativePath + " not found."));
@@ -166,7 +194,7 @@ public class GenerateService {
                 }
 
             } catch (IOException e) {
-                throw new RuntimeException("파일 처리 중 오류 발생: " + htmlFile.getName(), e);
+                throw new IOException("파일 처리 중 오류 발생", e);
             }
         }
     }

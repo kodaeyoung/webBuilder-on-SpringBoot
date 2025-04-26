@@ -44,11 +44,15 @@ public class ModifyService {
 
         // 필수 값 검증
         if (path == null || prompt == null || path.isEmpty() || prompt.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_REQUEST,"File path and prompt %sare required.");
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"File path and prompt are required.");
         }
 
         // 프롬프트를 두 부분으로 분리: DOM 요소 + 수정 요청
         String[] promptParts = prompt.split("\\n\\n");
+        if (promptParts.length < 2) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST, "Prompt format is invalid. Must contain DOM Element and Prompt parts.");
+        }
+
         String domElement = promptParts[0].replace("# DOM Element", "").trim();         // DOM Element 부분만 추출
         String modificationRequest = promptParts[1].replace("# Prompt", "").trim();     // Prompt 부분만 추출
 
@@ -77,37 +81,38 @@ public class ModifyService {
     }
 
 
-    @Transactional
+
     private void modifyEntirePage(String filePath, String modificationRequest) throws IOException {
+
+        // 1. HTML 파일 실제 경로 계산
+        Path htmlFilePath = Paths.get(System.getProperty("user.dir")).resolve(filePath);
+
+        // 2. store/dashboard/dir1/index.html 형태에서 store/dashboard/dir1 을 추출
+        String[] parts = filePath.split(Pattern.quote(File.separator));
+        if (parts.length < 4) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"파일 경로가 올바르지 않습니다: " + filePath);
+        }
+        String directoryPath = File.separator + parts[0] + File.separator + parts[1] + File.separator + parts[2]; // 예:  store/dashboard/dir1
+
+        // 3. DB에서 dashboard 정보 조회
+        DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(directoryPath)
+                .orElseThrow(()-> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard not found for path: " + directoryPath));
+
         try {
-            // 1. HTML 파일 실제 경로 계산
-            Path htmlFilePath = Paths.get(System.getProperty("user.dir")).resolve(filePath);
-
-            // 2. store/dashboard/dir1/index.html 형태에서 store/dashboard/dir1 을 추출
-            String[] parts = filePath.split(Pattern.quote(File.separator));
-            if (parts.length < 4) {
-                throw new CustomException(ErrorCode.INVALID_REQUEST,"파일 경로가 올바르지 않습니다: " + filePath);
-            }
-            String directoryPath = File.separator + parts[0] + File.separator + parts[1] + File.separator + parts[2]; // 예:  store/dashboard/dir1
-
-            // 3. DB에서 dashboard 정보 조회
-            DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(directoryPath)
-                    .orElseThrow(()-> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard not found for path: " + directoryPath));
-
             // 4. 기존 HTML 내용 읽기
             String htmlContent = Files.readString(htmlFilePath, StandardCharsets.UTF_8);
 
             // 5. GPT 프롬프트 구성
             String prompt = String.format("""
-                Modify the HTML content below to match the user's requirements
-                Current HTML:
-                %s
-                Modification Requirements:
-                %s
-                """, htmlContent, modificationRequest);
+                    Modify the HTML content below to match the user's requirements
+                    Current HTML:
+                    %s
+                    Modification Requirements:
+                    %s
+                    """, htmlContent, modificationRequest);
 
             // 6. GPT API 호출
-            String gptResponse = GptApi.gpt(prompt,"You are a helpful assistant.",16384);  // gpt-4o-mini 호출로 구현
+            String gptResponse = GptApi.gpt(prompt, "You are a helpful assistant.", 16384);  // gpt-4o-mini 호출로 구현
 
             // 7. <!DOCTYPE html>부터 </html>까지 추출
             Extraction.extractValidHtml(gptResponse);
@@ -122,14 +127,13 @@ public class ModifyService {
             String localServerUrl = "http://localhost:8080/" + directoryPath + "/index.html";
 
             // 11. 캡처 (나중에 구현)
-             Screenshot.takeScreenshot(localServerUrl, screenshotPath.toString());
+            Screenshot.takeScreenshot(localServerUrl, screenshotPath.toString());
 
             // 12. Dashboard 업데이트
             dashboardEntity.updateModified(true);
             dashboardRepository.save(dashboardEntity);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error processing prompt with GPT: " + e.getMessage());
+        } catch (IOException | RuntimeException e) {
+            throw new RuntimeException("Error processing prompt with GPT: " + e.getMessage(), e);
         }
     }
 
@@ -175,16 +179,19 @@ public class ModifyService {
             String extractedKeywords = GptApi.gpt(systemPrompt, userPrompt, 1000);
 
             // 2. Google Custom Search API로 이미지 검색
-            RestTemplate restTemplate = new RestTemplate();
-
             String apiUrl = String.format(
                     "https://www.googleapis.com/customsearch/v1?q=%s&cx=%s&key=%s&searchType=image&num=1",
                     URLEncoder.encode(extractedKeywords, StandardCharsets.UTF_8),
                     pseId,
                     cseApiKey
             );
-
+            RestTemplate restTemplate = new RestTemplate();
             String response = restTemplate.getForObject(apiUrl, String.class);
+
+            if (response == null) {
+                throw new RuntimeException("Google Search API 응답이 없습니다.");
+            }
+
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode json = mapper.readTree(response);
@@ -200,9 +207,10 @@ public class ModifyService {
 
             return updatedDomElement;
 
+        } catch (IOException e) {
+            throw new IOException("JSON 파싱 중 오류가 발생", e);
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("이미지 요소를 수정하는 중 오류가 발생했습니다.");
+            throw new RuntimeException("이미지 요소 수정 중 오류가 발생", e);
         }
     }
 

@@ -19,7 +19,6 @@ public class UserController {
     public ResponseEntity<?> getProfile(Authentication authentication) {
         // Authentication 객체에서 UserDTO를 가져옴
         UserDTO userDTO = (UserDTO) authentication.getPrincipal();
-
         // userDTO가 null이면, CustomException을 던져서 처리
         if (userDTO == null) {
             throw new CustomException(ErrorCode.USER_NOT_FOUND);

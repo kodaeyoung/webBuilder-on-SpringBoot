@@ -14,13 +14,12 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.swing.undo.CannotUndoException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,65 +49,80 @@ public class DashboardService {
 
     //대시보드 공유
     public SharedTemplateDTO projectShare(Long id, String templateName, String category, UserDTO userDTO) throws IOException {
+        try {
+            Optional<DashboardEntity> optionalDashboardEntity = dashboardRepository.findById(id);
 
-        Optional<DashboardEntity> optionalDashboardEntity = dashboardRepository.findById(id);
+            if (optionalDashboardEntity.isPresent()) {
+                DashboardEntity dashboardEntity = optionalDashboardEntity.get();
 
-        if (optionalDashboardEntity.isPresent()) {
-            DashboardEntity dashboardEntity = optionalDashboardEntity.get();
+                Path rootDirPath = Paths.get(System.getProperty("user.dir")); // 애플리케이션의 루트 디렉터리
 
-            Path rootDirPath = Paths.get(System.getProperty("user.dir")); // 애플리케이션의 루트 디렉터리
+                // 선택된 대시보드의 절대 경로
+                Path selectProjectPathAbsolute = rootDirPath.resolve(dashboardEntity.getProjectPath());
 
-            // 선택된 대시보드의 절대 경로
-            Path selectProjectPathAbsolute = rootDirPath.resolve(dashboardEntity.getProjectPath());
+                // 새로운 디렉토리 생성
+                String newDirName = templateName + "_" + userDTO.getEmail() + "_" + System.currentTimeMillis();
+                Path newSharedTemplateAbsolutePath = rootDirPath.resolve("store/sharedTemplate").resolve(newDirName); //절대 경로
 
-            // 새로운 디렉토리 생성
-            String newDirName = templateName + "_" + userDTO.getEmail() + "_" + System.currentTimeMillis();
-            Path newSharedTemplateAbsolutePath = rootDirPath.resolve("store/sharedTemplate").resolve(newDirName); //절대 경로
+                // 디렉토리가 존재하지 않으면 생성
+                if (Files.notExists(newSharedTemplateAbsolutePath)) {
+                    Files.createDirectories(newSharedTemplateAbsolutePath);
+                }
 
-            // 디렉토리가 존재하지 않으면 생성
-            if (Files.notExists(newSharedTemplateAbsolutePath)) {
-                Files.createDirectories(newSharedTemplateAbsolutePath);
+                // 템플릿 파일 복사
+                try {
+                    DirectoryService.copyDirectory(selectProjectPathAbsolute, newSharedTemplateAbsolutePath);
+                } catch (IOException e) {
+                    throw new IOException("Failed to copy template files", e);
+                }
+
+                // 선택된 대시보드 이미지의 절대경로
+                Path selectProjectImagePathAbsolute = rootDirPath.resolve(dashboardEntity.getImagePath());
+                // 새로운 이미지를 저장할 경로
+                Path newImagePath = rootDirPath.resolve("store/sharedTemplateImage").resolve(newDirName + ".png"); //절대경로
+
+                // 이미지 파일 복사
+                try {
+                    Files.copy(selectProjectImagePathAbsolute, newImagePath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (IOException e) {
+                    throw new IOException("Failed to copy image file", e);
+                }
+
+                // 상대 경로로 변환
+                Path newSharedTemplateRelativePath = rootDirPath.relativize(newSharedTemplateAbsolutePath);
+                Path newSharedImageRelativePath = rootDirPath.relativize(newImagePath);
+
+                // sharedTemplate 테이블에 새 데이터 저장
+                SharedTemplateEntity newSharedTemplate = SharedTemplateEntity.builder()
+                        .templateName((templateName != null) ? templateName : "default")
+                        .templatePath(newSharedTemplateRelativePath.toString().replace("\\", "/"))
+                        .imagePath(newSharedImageRelativePath.toString().replace("\\", "/"))
+                        .category(category)
+                        .userDTO(userDTO)
+                        .build();
+
+                try {
+                    sharedTemplateRepository.save(newSharedTemplate);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to save shared template", e);
+                }
+
+                SharedTemplateDTO sharedTemplateDTO = SharedTemplateDTO.fromEntity(newSharedTemplate, userDTO);
+                return sharedTemplateDTO;
+            } else {
+                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND, "Project not found");
             }
-
-            // 템플릿 파일 복사
-            DirectoryService.copyDirectory(selectProjectPathAbsolute, newSharedTemplateAbsolutePath);
-
-
-            // 선택된 대시보드 이미지의 절대경로
-            Path selectProjectImagePathAbsolute = rootDirPath.resolve(dashboardEntity.getImagePath());
-            // 새로운 이미지를 저장할 경로
-            Path newImagePath = rootDirPath.resolve("store/sharedTemplateImage").resolve(newDirName + ".png"); //절대경로
-
-            // 이미지 파일 복사
-            Files.copy(selectProjectImagePathAbsolute, newImagePath, StandardCopyOption.REPLACE_EXISTING);
-
-            // 상대 경로로 변환
-
-            Path newSharedTemplateRelativePath = rootDirPath.relativize(newSharedTemplateAbsolutePath);
-            Path newSharedImageRelativePath = rootDirPath.relativize(newImagePath);
-
-
-            // sharedTemplate 테이블에 새 데이터 저장
-            SharedTemplateEntity newSharedTemplate = SharedTemplateEntity.builder()
-                    .templateName((templateName != null) ? templateName : "default")
-                    .templatePath(newSharedTemplateRelativePath.toString().replace("\\", "/"))
-                    .imagePath(newSharedImageRelativePath.toString().replace("\\", "/"))
-                    .category(category)
-                    .userDTO(userDTO)
-                    .build();
-
-            sharedTemplateRepository.save(newSharedTemplate);
-            SharedTemplateDTO sharedTemplateDTO = SharedTemplateDTO.fromEntity(newSharedTemplate,userDTO);
-            return sharedTemplateDTO;
-        } else {
-            throw new CustomException(ErrorCode.PROJECT_NOT_FOUND,"project not found");
+        } catch (IOException e) {
+            throw new IOException("File system error", e);
+        } catch (Exception e) {
+            throw new RemoteException("An unknown error occurred", e);
         }
     }
 
 
     //대시보드 삭제
     @Transactional
-    public boolean removeProject(Long id) {
+    public void removeProject(Long id) throws IOException {
         Optional<DashboardEntity> optionalDashboardEntity = dashboardRepository.findById(id);
         if (optionalDashboardEntity.isPresent()) {
             DashboardEntity dashboardEntity = optionalDashboardEntity.get();
@@ -118,15 +132,21 @@ public class DashboardService {
             Path imageAbsolutePath = rootDirPath.resolve(dashboardEntity.getImagePath());
 
             try {
+                // 프로젝트 파일과 이미지 파일 삭제
                 DirectoryService.deleteDirectory(projectAbsolutePath);
                 DirectoryService.deleteDirectory(imageAbsolutePath);
             } catch (IOException e) {
-                e.printStackTrace();
-                return false;
+                // 예외가 발생하면 적절한 커스텀 예외로 던집니다.
+                throw new IOException("Failed to delete project or image files", e);
             }
-            dashboardRepository.delete(dashboardEntity);
-            return true;
+
+            try {
+                // 대시보드 엔티티 삭제
+                dashboardRepository.delete(dashboardEntity);
+            } catch (Exception e) {
+                // DB 삭제 실패 시 예외 처리
+                throw new RuntimeException("Failed to delete project from database", e);
+            }
         }
-        return false;
     }
 }

@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +24,7 @@ public class DeployService {
     private final DashboardRepository dashboardRepository;
 
     @Transactional
-    public boolean deployProject(Long id, String deployName) throws IOException {
+    public void deployProject(Long id, String deployName) throws IOException {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
@@ -71,12 +70,10 @@ public class DeployService {
         dashboardEntity.updatePublish(true);
         dashboardEntity.updateDeployDomain(newDeployRelativePath.toString().replace("\\", "/"));
         dashboardRepository.save(dashboardEntity);
-
-        return true;
     }
 
     @Transactional
-    public boolean undeployProject(Long id) {
+    public void undeployProject(Long id) throws IOException {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
@@ -101,7 +98,7 @@ public class DeployService {
                 DirectoryService.deleteDirectory(deployAbsolutePath);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to delete deployed files.", e);
+            throw new IOException("Failed to delete deployed files.", e);
         }
 
         // deploy 엔티티 삭제
@@ -114,11 +111,10 @@ public class DeployService {
         dashboardEntity.updateModified(false);
 
         dashboardRepository.save(dashboardEntity);
-        return true;
     }
 
     @Transactional
-    public boolean updateDeploy(Long id) throws IOException {
+    public void updateDeploy(Long id) throws IOException {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
@@ -155,7 +151,5 @@ public class DeployService {
         // 7. Dashboard 상태 업데이트
         dashboardEntity.updateModified(false);
         dashboardRepository.save(dashboardEntity);
-
-        return true;
     }
 }

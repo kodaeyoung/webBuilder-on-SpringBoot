@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -21,22 +22,9 @@ public class ModifyController {
 
 
     @PostMapping("/modify")
-    public ResponseEntity<ApiResponse<String>> modifyFile(@RequestBody Map<String, Object> body) {
-        try {
-            // 요청 처리
-            String result = modifyService.handleModifyRequest(body);
-
-            // 성공 응답
-            ApiResponse<String> response = new ApiResponse<>(result);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (IllegalArgumentException e) {
-            // 잘못된 요청에 대해서는 400 Bad Request 처리
-            throw new CustomException(ErrorCode.INVALID_REQUEST, e.getMessage());
-
-        } catch (Exception ex) {
-            // 예기치 않은 서버 오류에 대해서는 500 Internal Server Error 처리
-            throw new RuntimeException(ex);
-        }
+    public ResponseEntity<ApiResponse<String>> modifyFile(@RequestBody Map<String, Object> body) throws IOException {
+        String result = modifyService.handleModifyRequest(body);
+        ApiResponse<String> response = new ApiResponse<>(result);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }

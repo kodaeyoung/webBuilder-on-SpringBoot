@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -36,36 +37,24 @@ public class DashboardController {
         }
         String email = userDTO.getEmail();
 
-        try {
-            List<DashboardDTO> dashboardDTO = dashboardService.getUserDashboard(email);
-            ApiResponse<List<DashboardDTO>> response = new ApiResponse<>("Dashboard fetched successfully", dashboardDTO);
-            return ResponseEntity.ok(response);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        List<DashboardDTO> dashboardDTO = dashboardService.getUserDashboard(email);
+        ApiResponse<List<DashboardDTO>> response = new ApiResponse<>("Dashboard fetched successfully", dashboardDTO);
+        return ResponseEntity.ok(response);
+
     }
 
     //프로젝트 이름 변경
     @PatchMapping("/{id}/update-name")
     public ResponseEntity<ApiResponse<Map<String, Object>>> updateProjectName(@RequestParam String newName, @PathVariable Long id) {
-        try {
-            boolean updated = dashboardService.updateProjectName(id, newName);
-
-            if (updated) {
-                Map<String, Object> responseData = Map.of("id", id, "projectName", newName);
-                ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project name updated successfully", responseData);
-                return ResponseEntity.ok(response);
-            } else {
-                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND); // 프로젝트를 못 찾았을 때
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        dashboardService.updateProjectName(id, newName);
+        Map<String, Object> responseData = Map.of("id", id, "projectName", newName);
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project name updated successfully", responseData);
+        return ResponseEntity.ok(response);
     }
 
     //프로젝트 공유
     @PostMapping("/share")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> projectShare(@RequestBody Map<String, Object> body, Authentication authentication) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> projectShare(@RequestBody Map<String, Object> body, Authentication authentication) throws IOException {
         UserDTO userDTO = (UserDTO) authentication.getPrincipal();
         if (userDTO == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
@@ -74,39 +63,22 @@ public class DashboardController {
         String templateName = (String) body.get("templateName");
         String category = (String) body.get("category");
 
-        try {
-            SharedTemplateDTO sharedTemplateDTO = dashboardService.projectShare(id, templateName, category, userDTO);
-
-            if (sharedTemplateDTO != null) {
-                Map<String, Object> responseData = Map.of(
-                        "success", "Project shared successfully",
-                        "sharedTemplate", sharedTemplateDTO
-                );
-                ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project shared successfully", responseData);
-                return ResponseEntity.ok(response);
-            } else {
-                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND); // 프로젝트를 못 찾으면 CustomException
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        SharedTemplateDTO sharedTemplateDTO = dashboardService.projectShare(id, templateName, category, userDTO);
+        Map<String, Object> responseData = Map.of(
+                "success", "Project shared successfully",
+                "sharedTemplate", sharedTemplateDTO
+        );
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project shared successfully", responseData);
+        return ResponseEntity.ok(response);
     }
 
     // 대시보드 삭제
     @DeleteMapping("/{id}/remove")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> removeProject(@PathVariable Long id) {
-        try {
-            boolean remove = dashboardService.removeProject(id);
-            if (remove) {
-                Map<String, Object> responseData = Map.of("id", id, "message", "Project removed successfully");
-                ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project removed successfully", responseData);
-                return ResponseEntity.ok(response);
-            } else {
-                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND); // 프로젝트 못 찾으면 CustomException
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+    public ResponseEntity<ApiResponse<Map<String, Object>>> removeProject(@PathVariable Long id) throws IOException {
+        dashboardService.removeProject(id);
+        Map<String, Object> responseData = Map.of("id", id, "message", "Project removed successfully");
+        ApiResponse<Map<String, Object>> response = new ApiResponse<>("Project removed successfully", responseData);
+        return ResponseEntity.ok(response);
     }
 
 
