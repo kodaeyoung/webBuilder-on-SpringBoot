@@ -1,4 +1,4 @@
-package com.project.webBuilder.common.gpt;
+package com.project.webBuilder.global.gpt;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;

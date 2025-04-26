@@ -5,6 +5,8 @@ import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.dto.DashboardDTO;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
 import com.project.webBuilder.sharedTemplates.dto.SharedTemplateDTO;
 import com.project.webBuilder.sharedTemplates.entities.SharedTemplateEntity;
 import com.project.webBuilder.sharedTemplates.repository.SharedTemplateRepository;
@@ -97,7 +99,7 @@ public class SharedTemplateService {
 
             return DashboardDTO.fromEntity(newDashboard);
         } else {
-            throw new IllegalArgumentException("Template not found");
+            throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND);
         }
     }
 

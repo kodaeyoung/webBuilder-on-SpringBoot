@@ -29,7 +29,8 @@ export default function ProfileBox() {
             "Content-Type": "application/json",
           },
         });
-        const data = await response.json();
+        const json = await response.json();
+        const data = json.data;
 
         if (response.ok) {
           setProfileData({
@@ -50,7 +51,7 @@ export default function ProfileBox() {
   const handleLogout = async () => {
     try {
       const response = await fetch("http://localhost:8080/logout", {
-        method: "Post",
+        method: "POST",
         headers: {
           Authorization: `Bearer ${jwt}`,
           "Content-Type": "application/json",

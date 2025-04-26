@@ -1,6 +1,9 @@
 package com.project.webBuilder.generate.controller;
 
 import com.project.webBuilder.generate.service.GenerateService;
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
+import com.project.webBuilder.global.response.ApiResponse;
 import com.project.webBuilder.user.dto.UserDTO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -20,18 +23,23 @@ public class GenerateController {
     private final GenerateService generateService;
     @PostMapping("generate")
     public ResponseEntity<?> generatePage(@RequestBody Map<String,Object> body, Authentication authentication) throws IOException {
+
         UserDTO userDTO = (UserDTO) authentication.getPrincipal();
+        if (userDTO == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
         String email = userDTO.getEmail();
 
-        try{
-            boolean generate = generateService.generate(body,email);
-            if(generate){
-                return ResponseEntity.ok("generate project successfully");
-            }else{
-                return ResponseEntity.status(404).body("appropriate template not found");
+        try {
+            boolean generate = generateService.generate(body, email);
+            if (generate) {
+                return ResponseEntity.ok(new ApiResponse<>("Generate project successfully", null));
+            } else {
+                throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND);
             }
-        } catch (Exception e){
-            return ResponseEntity.status(500).body("An error occurred: " + e.getMessage());
+        } catch (Exception ex) {
+            // 예상치 못한 예외는 RuntimeException으로 던짐
+            throw new RuntimeException(ex);
         }
     }
 }

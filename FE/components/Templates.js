@@ -38,24 +38,20 @@ export default function Templates({ showMoreButton, showCategories }) {
   
 
   useEffect(() => {
-    if (!jwt) return;
     const fetchTemplates = async () => {
       try {
         const res = await fetch(
           "http://localhost:8080/sharedTemplate/get-all",
           {
             method: "get",
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-              "Content-Type": "application/json",
-            },
           }
           
         );
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const data = await res.json();
+        const json = await res.json();
+        const data = json.data;
         setTemplates(data);
         const extractedCategories = [
           "모든 카테고리",
@@ -71,7 +67,7 @@ export default function Templates({ showMoreButton, showCategories }) {
       }
     };
     fetchTemplates();
-  }, [jwt]);
+  }, []);
 
   useEffect(() => {
     if (!jwt) return;

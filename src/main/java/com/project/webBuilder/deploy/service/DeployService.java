@@ -5,6 +5,8 @@ import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
 import com.project.webBuilder.deploy.entities.DeployEntity;
 import com.project.webBuilder.deploy.repository.DeployRepository;
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,16 +28,16 @@ public class DeployService {
     public boolean deployProject(Long id, String deployName) throws IOException {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dashboard with id " + id + " not found."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
 
         // 2. 이미 배포된 경우 예외
         if (Boolean.TRUE.equals(dashboardEntity.getPublish())) {
-            throw new RuntimeException("Already in deployment.");
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"Already in deployment.");
         }
 
         // 3. 중복되는 deployName 확인
         if (deployRepository.existsByDeployName(deployName)) {
-            throw new RuntimeException("Deploy name " + deployName + " already exists.");
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"Deploy name " + deployName + " already exists.");
         }
 
 
@@ -77,17 +79,17 @@ public class DeployService {
     public boolean undeployProject(Long id) {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dashboard with id " + id + " not found."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
 
         // 2. 배포 여부 확인
         if (!Boolean.TRUE.equals(dashboardEntity.getPublish())) {
-            throw new RuntimeException("This dashboard is not currently deployed.");
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"This dashboard is not currently deployed.");
         }
 
         String projectRelativePath = dashboardEntity.getProjectPath();
         // deploy 엔티티 조회
         DeployEntity deployEntity= deployRepository.findByOriginalProjectPath(projectRelativePath)
-                .orElseThrow(() -> new RuntimeException("Can not find deployEntity with original project path"));
+                .orElseThrow(() -> new CustomException(ErrorCode.DEPLOY_NOT_FOUND,"Can not find deployEntity with original project path"));
 
 
         // 실제 배포 디렉터리 삭제
@@ -119,12 +121,12 @@ public class DeployService {
     public boolean updateDeploy(Long id) throws IOException {
         // 1. Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dashboard with id " + id + " not found."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard with id " + id + " not found."));
 
         // 2. Deploy 엔티티 조회 (projectPath 기준)
         String projectRelativePath = dashboardEntity.getProjectPath();
         DeployEntity deployEntity = deployRepository.findByOriginalProjectPath(projectRelativePath)
-                .orElseThrow(() -> new RuntimeException("Deploy not found for project path: " + projectRelativePath));
+                .orElseThrow(() -> new CustomException(ErrorCode.DEPLOY_NOT_FOUND,"Deploy not found for project path: " + projectRelativePath));
 
 
         // 3. 절대 경로 생성

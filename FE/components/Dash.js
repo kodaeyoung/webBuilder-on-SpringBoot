@@ -164,11 +164,11 @@ export default function Dash() {
         if (response.ok) {
           dispatch({
             type: "SET_PROFILE_IMAGE",
-            payload: data.profileImageUrl || "/profile.png",
+            payload: data.data.profileImageUrl || "/profile.png",
           });
           dispatch({
             type: "SET_DISPLAY_NAME",
-            payload: data.displayName || "사용자",
+            payload: data.data.displayName || "사용자",
           });
         }
       } catch (error) {
@@ -200,7 +200,8 @@ const fetchAllProjects = async () => {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    const data = await res.json();
+    const json = await res.json();
+    const data= json.data;
 
     const noDifferences = {};
     data.forEach((project) => {
@@ -236,7 +237,13 @@ const fetchSharedTemplates = async () => {
     }
 
     // HTTP 상태 코드가 204 (NO_CONTENT)인 경우 빈 배열 처리
-    const data = res.status === 204 ? [] : await res.json();
+    let data;
+    if (res.status === 204) {
+      data = [];
+    } else {
+      const json = await res.json();  // 먼저 await 해서 결과를 받아
+      data = json.data;               // 그 다음에 data 접근
+    }
 
     dispatch({ type: "SET_TEMPLATES", payload: data });
     dispatch({
@@ -467,8 +474,9 @@ const fetchSharedTemplates = async () => {
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-
-      const updatedTemplate = await res.json();
+      
+      const json = await res.json();
+      const updatedTemplate = json.data;
 
       dispatch({
         type: "SET_PROJECTS",

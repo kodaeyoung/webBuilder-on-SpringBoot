@@ -1,6 +1,9 @@
 package com.project.webBuilder.deploy.controller;
 
 import com.project.webBuilder.deploy.service.DeployService;
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
+import com.project.webBuilder.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,51 +21,55 @@ public class DeployController {
 
     // 프로젝트 배포하기
     @PostMapping("/deploy")
-    public ResponseEntity<?> deployProject(@RequestBody Map<String,Object> body){
+    public ResponseEntity<?> deployProject(@RequestBody Map<String, Object> body) {
         Long id = Long.parseLong(String.valueOf(body.get("id")));
         String deployName = String.valueOf(body.get("deployName"));
 
         try {
-            boolean deploy = deployService.deployProject(id,deployName);
-            if(deploy){
-                return ResponseEntity.ok("Project deploy successfully");
-            }else{
-                return ResponseEntity.status(404).body("Project not found");
+            boolean deploy = deployService.deployProject(id, deployName);
+            if (deploy) {
+                return ResponseEntity.ok(new ApiResponse<>("Project deploy successfully", null));
+            } else {
+                throw new CustomException(ErrorCode.TEMPLATE_NOT_FOUND); // Project not found 에러를 CustomException으로 처리
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("An error occurred: "+e.getMessage());
+        }catch (Exception ex) {
+            // 예상치 못한 예외는 RuntimeException으로 던짐
+            throw new RuntimeException(ex);
         }
     }
 
-    //프로젝트 배포 중지
+    // 프로젝트 배포 중지
     @PostMapping("/undeploy")
-    public ResponseEntity<?> undeployProject(@RequestBody Map<String,Object> body){
+    public ResponseEntity<?> undeployProject(@RequestBody Map<String, Object> body) {
         Long id = Long.parseLong(String.valueOf(body.get("id")));
         try {
             boolean undeploy = deployService.undeployProject(id);
-            if(undeploy){
-                return ResponseEntity.ok("Project undeploy successfully");
-            }else{
-                return ResponseEntity.status(404).body("Deploy project not found");
+            if (undeploy) {
+                return ResponseEntity.ok(new ApiResponse<>("Project undeploy successfully", null));
+            } else {
+                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND); // Deploy project not found 에러를 CustomException으로 처리
             }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("An error occurred: "+e.getMessage());
+        }catch (Exception ex) {
+            // 예상치 못한 예외는 RuntimeException으로 던짐
+            throw new RuntimeException(ex);
         }
     }
 
     // 프로젝트 배포 업데이트
     @PostMapping("update-deploy")
-    public ResponseEntity<?> updateDeploy(@RequestBody Map<String,Object> body){
+    public ResponseEntity<?> updateDeploy(@RequestBody Map<String, Object> body) {
         Long id = Long.parseLong(String.valueOf(body.get("id")));
+
         try {
             boolean update = deployService.updateDeploy(id);
-            if(update){
-                return ResponseEntity.ok("Deploy update successfully");
-            }else{
-                return ResponseEntity.status(404).body("Deploy project not found");
+            if (update) {
+                return ResponseEntity.ok(new ApiResponse<>("Deploy update successfully", null));
+            } else {
+                throw new CustomException(ErrorCode.PROJECT_NOT_FOUND); // Deploy project not found 에러를 CustomException으로 처리
             }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("An error occurred: "+e.getMessage());
+            // 예상치 못한 예외는 RuntimeException으로 던짐
+            throw new RuntimeException("An error occurred: " + e.getMessage(), e);
         }
     }
 

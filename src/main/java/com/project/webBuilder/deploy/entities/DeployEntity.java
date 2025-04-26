@@ -1,14 +1,11 @@
 package com.project.webBuilder.deploy.entities;
 
-import com.project.webBuilder.common.entities.BaseTimeEntity;
+import com.project.webBuilder.global.entities.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.security.web.header.writers.StaticHeadersWriter;
-
-import java.lang.reflect.Type;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

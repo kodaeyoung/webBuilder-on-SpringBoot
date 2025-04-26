@@ -1,8 +1,8 @@
 package com.project.webBuilder.generate.service;
 
-import com.project.webBuilder.common.gpt.GptApi;
-import com.project.webBuilder.common.util.Extraction;
-import com.project.webBuilder.common.util.Screenshot;
+import com.project.webBuilder.global.gpt.GptApi;
+import com.project.webBuilder.global.util.Extraction;
+import com.project.webBuilder.global.util.Screenshot;
 import com.project.webBuilder.dir.service.DirectoryService;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
@@ -10,11 +10,7 @@ import com.project.webBuilder.generate.dto.BasicTemplateDTO;
 import com.project.webBuilder.generate.entities.BasicTemplateEntity;
 import com.project.webBuilder.generate.repository.BasicTemplateRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,12 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Service

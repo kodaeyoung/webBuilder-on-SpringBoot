@@ -1,6 +1,9 @@
 package com.project.webBuilder.modify.controller;
 
 
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
+import com.project.webBuilder.global.response.ApiResponse;
 import com.project.webBuilder.modify.service.ModifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,15 +21,22 @@ public class ModifyController {
 
 
     @PostMapping("/modify")
-    public ResponseEntity<String> modifyFile(@RequestBody Map<String,Object> body) {
+    public ResponseEntity<ApiResponse<String>> modifyFile(@RequestBody Map<String, Object> body) {
         try {
+            // 요청 처리
             String result = modifyService.handleModifyRequest(body);
-            return ResponseEntity.ok(result);
+
+            // 성공 응답
+            ApiResponse<String> response = new ApiResponse<>(result);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error updating HTML file: " + e.getMessage());
+            // 잘못된 요청에 대해서는 400 Bad Request 처리
+            throw new CustomException(ErrorCode.INVALID_REQUEST, e.getMessage());
+
+        } catch (Exception ex) {
+            // 예기치 않은 서버 오류에 대해서는 500 Internal Server Error 처리
+            throw new RuntimeException(ex);
         }
     }
 }

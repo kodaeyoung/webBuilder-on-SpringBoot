@@ -1,7 +1,7 @@
 package com.project.webBuilder.dashboards.entities;
 
 
-import com.project.webBuilder.common.entities.BaseTimeEntity;
+import com.project.webBuilder.global.entities.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

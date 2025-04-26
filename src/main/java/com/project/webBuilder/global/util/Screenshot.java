@@ -1,4 +1,4 @@
-package com.project.webBuilder.common.util;
+package com.project.webBuilder.global.util;
 
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;

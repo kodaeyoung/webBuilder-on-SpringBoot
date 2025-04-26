@@ -2,9 +2,11 @@ package com.project.webBuilder.modify.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.webBuilder.common.gpt.GptApi;
-import com.project.webBuilder.common.util.Extraction;
-import com.project.webBuilder.common.util.Screenshot;
+import com.project.webBuilder.global.exeption.custom.CustomException;
+import com.project.webBuilder.global.exeption.errorcode.ErrorCode;
+import com.project.webBuilder.global.gpt.GptApi;
+import com.project.webBuilder.global.util.Extraction;
+import com.project.webBuilder.global.util.Screenshot;
 import com.project.webBuilder.dashboards.entities.DashboardEntity;
 import com.project.webBuilder.dashboards.repository.DashboardRepository;
 import jakarta.transaction.Transactional;
@@ -21,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,7 +44,7 @@ public class ModifyService {
 
         // 필수 값 검증
         if (path == null || prompt == null || path.isEmpty() || prompt.isEmpty()) {
-            throw new IllegalArgumentException("File path and prompt %sare required.");
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"File path and prompt %sare required.");
         }
 
         // 프롬프트를 두 부분으로 분리: DOM 요소 + 수정 요청
@@ -85,13 +86,13 @@ public class ModifyService {
             // 2. store/dashboard/dir1/index.html 형태에서 store/dashboard/dir1 을 추출
             String[] parts = filePath.split(Pattern.quote(File.separator));
             if (parts.length < 4) {
-                throw new IllegalArgumentException("파일 경로가 올바르지 않습니다: " + filePath);
+                throw new CustomException(ErrorCode.INVALID_REQUEST,"파일 경로가 올바르지 않습니다: " + filePath);
             }
             String directoryPath = File.separator + parts[0] + File.separator + parts[1] + File.separator + parts[2]; // 예:  store/dashboard/dir1
 
             // 3. DB에서 dashboard 정보 조회
             DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(directoryPath)
-                    .orElseThrow(()-> new RuntimeException("Dashboard not found for path: " + directoryPath));
+                    .orElseThrow(()-> new CustomException(ErrorCode.PROJECT_NOT_FOUND,"Dashboard not found for path: " + directoryPath));
 
             // 4. 기존 HTML 내용 읽기
             String htmlContent = Files.readString(htmlFilePath, StandardCharsets.UTF_8);
@@ -210,14 +211,14 @@ public class ModifyService {
         // 예: store/dashboard/template1 형식의 디렉토리 추출
         String[] parts = filePath.split(Pattern.quote(File.separator));
         if (parts.length < 3) {
-            throw new IllegalArgumentException("파일 경로가 올바르지 않습니다: " + filePath);
+            throw new CustomException(ErrorCode.INVALID_REQUEST,"파일 경로가 올바르지 않습니다: " + filePath);
         }
 
         String directoryPath = parts[0] + File.separator + parts[1] + File.separator + parts[2];  // 예: store\dashboard\template1
 
         // Dashboard 조회
         DashboardEntity dashboardEntity = dashboardRepository.findByProjectPath(directoryPath)
-                .orElseThrow(() -> new IllegalStateException("Dashboard not found."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROJECT_NOT_FOUND));
 
         // 실제 HTML 파일의 경로 구성
         Path htmlFilePath = Paths.get(System.getProperty("user.dir"), filePath);
