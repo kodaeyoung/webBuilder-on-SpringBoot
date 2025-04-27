@@ -31,6 +31,10 @@ Spring Boot를 활용하여 백엔드 API를 재구성하고, 체계적인 코�
 	- 기존에는 대시보드와 공유 템플릿이 1대1 관계를 필수로 가졌지만, 현재는 대시보드와 공유 템플릿의 매핑 관계를 제거하고, 공유 템플릿을 user 테이블과 매핑하였음.
 	이를 통해 대시보드와 공유 템플릿은 간접적으로 1대n 관계를 가지게 됨
 
+3. JWT 기반 인증 방식 도입
+	- jwt 기반의 인증 방식을 도입하여, 서버는 Session을 사용하지 않고,stateless하게 api를 제공하게 하였음. 또한 로그아웃은 Redis 캐시를 활용하여 블랙리스트에 jwt를 추가하고 검증하도록 함
+
+4. Global Exception Handler를 구성하여 모든 예외를 중앙에서 처리하도록 구성. 이를 통해서 컨트롤러에서는 try-catch 문을 사용하지 않고 비즈니스 로직에만 집중할 수 있도록 함
 ### 삭제된 기능
 1. 공유 템플릿 좋아요 기능 삭제
 
@@ -40,23 +44,51 @@ Spring Boot를 활용하여 백엔드 API를 재구성하고, 체계적인 코�
 ![ERD](ERD.png)
 
 ## 명세
-| 분류           | 메소드  | URI                                              | 기능                         | RequestBody                                    | 데이터 처리                                                                 | 출력                               |
-|----------------|---------|--------------------------------------------------|------------------------------|------------------------------------------------|------------------------------------------------------------------------------|------------------------------------|
-| 웹사이트 생성  | POST    | /generate                                        | 사용자의 요구사항을 분석하여 웹사이트 생성 | websiteType, features, mood, content, projectName | AI 호출 및 입력 값에 따른 페이지 생성, Dashboards테이블에 저장                    | generate project successfully      |
-| 대시보드       | GET     | /dashboard/my-dashboard                          | 로그인 한 사용자의 대시보드 목록       |                                                | 로그인 한 사용자의 세션의 email을 기준으로 모든 대시보드 호출                         | Email별 모든 Dashboards객체       |
-| 대시보드       | PATCH   | /dashboard/{id}/update-name?newName={}           | 대시보드 프로젝트 이름 변경          | id                                             | id를 기준으로 Dashboards의 값을 name으로 수정                                       | Project name updated successfully  |
-| 대시보드       | POST    | /dashboard/share                                 | 대시보드의 특정 프로젝트 공유하기     | id, templateName, category                     | id를 기준으로 Dashboards.projectPath 호출 → 절대 경로로 변경 후 공유 파일 복사 → SharedTemplates 테이블에 항목 저장 | project shared successfully        |
-| 대시보드       | DELETE  | /dashboard/{id}/remove                           | 특정 대시보드 삭제하기             | id                                             | id를 기준으로 Dashboards 삭제                                                  | Dashboard deleted successfully     |
-| 공유된 템플릿  | GET     | /sharedTemplate/get-all                          | 공유된 템플릿 목록 호출            |                                                | 모든 SharedTemplates 테이블을 참조하여 공유 템플릿 로드                              | 모든 SharedTemplates 객체         |
-| 공유된 템플릿  | POST    | /sharedTemplate/use                              | 공유된 템플릿 사용하기            | id, projectName                                | id를 기준으로 SharedTemplates 호출 후 대시보드 복사 및 Dashboards 테이블에 항목 저장         | dashboardDTO                       |
-| 공유된 템플릿  | GET     | /sharedTemplate/get-mine                         | 로그인한 사용자가 공유한 템플릿 로드 |                                                | 이메일을 기준으로 공유한 템플릿 로드                                               | 해당 SharedTemplates               |
-| 공유된 템플릿  | DELETE  | /sharedTemplate/{id}/remove                      | 공유된 템플릿 삭제               | id                                             | id를 기준으로 공유된 템플릿 삭제                                                | SharedTemplate remove successfully |
-| 디렉터리       | GET     | /get-structure/dir?path={}                       | 해당 디렉터리의 정보를 Json으로 제공 |                                                | 디렉터리를 재귀적으로 반복하여 파일까지 진입하여 제공                                  | 디렉터리 구조                      |
-| 파일           | GET     | /get-content/file?path={}                        | 해당 파일의 내용을 제공          |                                                | 해당 파일의 내용을 제공                                                     | 파일 내용                          |
-| 수정           | POST    | /modify                                          | 특정 파일을 AI로 수정           | path, prompt                                   | Path를 기준으로 파일 시스템 호출 및 AI에 Prompt하여 파일시스템 수정                     | HTML file updated successfully     |
-| 배포           | POST    | /deploy                                          | 배포                          | id, deployName                                 | id를 기준으로 해당 Dashboards 경로 추출 후 배포 파일시스템 복사 및 배포 로직 적용             | Project deploy successfully        |
-| 배포           | POST    | /undeploy                                        | 배포 중지                      | id                                             | id를 기준으로 배포 중지로직 적용, 배포 파일 시스템 삭제                                  | Project undeploy successfully      |
-| 배포           | POST    | /update-deploy                                   | 업데이트 적용                  | id                                             | id를 기준으로 업데이트 항목 있는 경우 업데이트 적용                                | Deployment updated successfully    |
+# API 명세
+
+## 웹사이트 생성
+| 분류        | 메소드 | URI          | 기능                        | RequestBody                                       | 데이터 처리                                                         | 출력                         |
+|-------------|--------|--------------|-----------------------------|--------------------------------------------------|---------------------------------------------------------------------|------------------------------|
+| 웹사이트 생성 | POST   | /generate    | 사용자의 요구사항을 분석하여 웹사이트 생성 | websiteType, features, mood, content, projectName | AI 호출 및 입력 값에 따른 페이지 생성, Dashboards 테이블에 저장       | generate project successfully |
+
+## 대시보드 관리
+| 분류      | 메소드 | URI                                      | 기능                              | RequestBody               | 데이터 처리                                                       | 출력                               |
+|-----------|--------|------------------------------------------|-----------------------------------|---------------------------|---------------------------------------------------------------------|------------------------------------|
+| 대시보드  | GET    | /dashboard/my-dashboard                  | 로그인한 사용자의 대시보드 목록  |                           | 로그인한 사용자의 세션의 email을 기준으로 모든 대시보드 호출        | Email별 모든 Dashboards 객체      |
+| 대시보드  | PATCH  | /dashboard/{id}/update-name?newName={}   | 대시보드 프로젝트 이름 변경     | id                        | id를 기준으로 Dashboards의 값을 name으로 수정                       | Project name updated successfully  |
+| 대시보드  | POST   | /dashboard/share                         | 대시보드의 특정 프로젝트 공유하기 | id, templateName, category | id를 기준으로 Dashboards.projectPath 호출 → 절대 경로로 변경 후 공유 파일 복사 → SharedTemplates 테이블에 항목 저장 | project shared successfully        |
+| 대시보드  | DELETE | /dashboard/{id}/remove                   | 특정 대시보드 삭제하기           | id                        | id를 기준으로 Dashboards 삭제                                       | Dashboard deleted successfully     |
+
+## 공유된 템플릿
+| 분류         | 메소드 | URI                                | 기능                               | RequestBody              | 데이터 처리                                                             | 출력                                      |
+|--------------|--------|------------------------------------|------------------------------------|--------------------------|-----------------------------------------------------------------------|-------------------------------------------|
+| 공유된 템플릿 | GET    | /sharedTemplate/get-all            | 공유된 템플릿 목록 호출           |                          | 모든 SharedTemplates 테이블을 참조하여 공유 템플릿 로드                   | 모든 SharedTemplates 객체                |
+| 공유된 템플릿 | POST   | /sharedTemplate/use                | 공유된 템플릿 사용하기            | id, projectName           | id를 기준으로 SharedTemplates 호출 후 대시보드 복사 및 Dashboards 테이블에 항목 저장 | dashboardDTO                             |
+| 공유된 템플릿 | GET    | /sharedTemplate/get-mine           | 로그인한 사용자가 공유한 템플릿 로드 |                          | 이메일을 기준으로 공유한 템플릿 로드                                    | 해당 SharedTemplates                     |
+| 공유된 템플릿 | DELETE | /sharedTemplate/{id}/remove        | 공유된 템플릿 삭제                | id                        | id를 기준으로 공유된 템플릿 삭제                                        | SharedTemplate remove successfully       |
+
+## 디렉터리 & 파일 관리
+| 분류      | 메소드 | URI                              | 기능                              | RequestBody               | 데이터 처리                                                       | 출력                                |
+|-----------|--------|----------------------------------|-----------------------------------|---------------------------|---------------------------------------------------------------------|-------------------------------------|
+| 디렉터리  | GET    | /get-structure/dir?path={}       | 해당 디렉터리의 정보를 JSON으로 제공 |                           | 디렉터리를 재귀적으로 반복하여 파일까지 진입하여 제공               | 디렉터리 구조                       |
+| 파일      | GET    | /get-content/file?path={}        | 해당 파일의 내용을 제공          |                           | 해당 파일의 내용을 제공                                             | 파일 내용                           |
+| 수정      | POST   | /modify                          | 특정 파일을 AI로 수정           | path, prompt              | Path를 기준으로 파일 시스템 호출 및 AI에 Prompt하여 파일시스템 수정 | HTML file updated successfully      |
+
+## 배포 및 중지
+| 분류       | 메소드 | URI               | 기능                    | RequestBody       | 데이터 처리                                                           | 출력                           |
+|------------|--------|-------------------|-------------------------|-------------------|---------------------------------------------------------------------|--------------------------------|
+| 배포       | POST   | /deploy           | 배포                    | id, deployName    | id를 기준으로 해당 Dashboards 경로 추출 후 배포 파일시스템 복사 및 배포 로직 적용 | Project deploy successfully    |
+| 배포 중지  | POST   | /undeploy         | 배포 중지                | id                | id를 기준으로 배포 중지로직 적용, 배포 파일 시스템 삭제               | Project undeploy successfully  |
+| 업데이트   | POST   | /update-deploy    | 업데이트 적용            | id                | id를 기준으로 업데이트 항목 있는 경우 업데이트 적용                | Deployment updated successfully|
+
+## 로그인/로그아웃
+| 분류    | 메소드 | URI          | 기능                        | RequestBody  | 데이터 처리                                         | 출력                |
+|---------|--------|--------------|-----------------------------|--------------|-----------------------------------------------------|---------------------|
+| 로그인  | GET    | /login       | 사용자를 소셜 로그인 화면으로 리다이렉션 |              | 소셜 로그인 페이지로 리다이렉트                     | 리다이렉트 URL       |
+| 로그아웃| POST   | /logout      | 사용자를 로그아웃               |              | 사용자의 JWT를 Redis 캐시의 블랙리스트로 저장       | 로그아웃 완료 메시지 |
+| 사용자정보 | GET | /profile      | 로그인한 사용자의 정보 리턴       |              | 로그인한 사용자 정보를 반환 (이메일, 이름 등)      | 사용자 정보 DTO      |
+
+
 
 
 ## application.property
@@ -99,9 +131,15 @@ google.api.key=${cse.key}
 
 spring.mvc.pathmatch.matching-strategy=ant_path_matcher
 
+#Redis
+spring.redis.host=${SPRING_REDIS_HOST:localhost}
+spring.redis.port=${SPRING_REDIS_PORT}
+
 #security ??
 logging.level.org.springframework.security.web.FilterChainProxy=DEBUG
 logging.level.org.springframework.security=DEBUG
+logging.level.org.springframework.data.redis=DEBUG
+spring.main.log-startup-info=true
 
 ```
 
@@ -153,6 +191,14 @@ dependencies {
 	// selenium
 	implementation 'org.seleniumhq.selenium:selenium-java:4.20.0'
 	implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.20.0'
+
+	//jwt
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+	//Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {
@@ -169,11 +215,12 @@ frontend : localhost:4000
 1. 프로젝트 clone 
 2. 버전에 맞게 spring boot 프로젝트 생성 후 src/main/java에 clone 받은 코드 적용
 3. Google API Console에 프로젝트 등록 및 OAuth2 설정 및 키 발급
-4. Google API console에 Google Custom Search Api 등록 및 키 발급(기능 불필요 시 modify/service/modifyService의 64~67 라인 및 convertDomElementSrcPath,modifyImageElementFromPrompt 주석처리리)
-5. application.property 및 build.gradle 작성(README참고고)
-6. 로컬에 설치된 chrome버전의 맞게 Chromedriver.exe 다운로드 후 프로젝트 루트디렉터리 하위에 추가 
-7. 프로젝트 실행 후 postman으로 요청으로 API 테스트
-8. 프론트엔드 적용 시 FE디렉터리에서 npm run dev 실행
+4. Google API console에 Google Custom Search Api 등록 및 키 발급(기능 불필요 시 modify/service/modifyService의 64~67 라인 및 convertDomElementSrcPath,modifyImageElementFromPrompt 주석처리)
+5. application.property 및 build.gradle 작성(README참고)
+6. 로컬에 설치된 chrome버전의 맞게 Chromedriver.exe 다운로드 후 프로젝트 루트디렉터리 하위에 추가
+7. Docker 기반 Redis 실행
+8. 프로젝트 실행 후 postman으로 요청으로 API 테스트
+99. 프론트엔드 적용 시 FE디렉터리에서 npm run dev 실행
 - 이미지 미리보기 기능은 현재 docker 기준으로 작성되어있음. 로컬환경에서 docker 없이 실행 시 (dash.js, template.js에서 IMAGE 컴포넌트를 app:8080에서 localhost:8080으로 변경해줘야 함)
 
 
