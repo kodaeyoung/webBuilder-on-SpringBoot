@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
         log.error("예상치 못한 오류 발생", ex);
-        // 서버 오류 시, ErrorCode 대신 하드코딩된 메시지 처리
+        // 서버 오류 시 하드코딩된 메시지 처리
         ErrorResponse errorResponse = new ErrorResponse(
                 "INTERNAL_SERVER_ERROR",  // 코드
                 "서버에서 오류가 발생했습니다.",  // 메시지

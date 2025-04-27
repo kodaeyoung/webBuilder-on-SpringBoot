@@ -60,10 +60,10 @@ public class SharedTemplateService {
         if (projectName == null || projectName.trim().isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_REQUEST, "프로젝트 이름이 비어 있습니다.");
         }
+
         if (email == null || email.trim().isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_REQUEST, "이메일이 비어 있습니다.");
         }
-
         Path rootDirPath = Paths.get(System.getProperty("user.dir")); // 애플리케이션의 루트 디렉터리
 
         // 선택된 템플릿의 절대 경로
